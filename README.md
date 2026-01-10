@@ -2,6 +2,8 @@
 
 A Chrome extension that enhances Salesforce navigation by extracting and organizing setup menu links, managing Object Manager items, and providing quick access to admin features.
 
+_Note: This extension was built mainly for personal use, so it may not be fully polished, but it works well for me—feel free to use and modify it as needed._
+
 ## Features
 
 - **Quick Navigation**: Single-click the button to navigate between Setup and Home pages. Double-click to open the navigation modal.
