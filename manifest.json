@@ -1,0 +1,31 @@
+{
+  "manifest_version": 3,
+  "name": "Easy Salesforce Navigation",
+  "version": "1.0",
+  "description": "Adds a floating button to Salesforce pages for easier navigation.",
+  "permissions": ["activeTab", "scripting", "storage", "cookies"],
+  "host_permissions": [
+    "*://*.lightning.force.com/*",
+    "*://*.my.salesforce.com/*",
+    "*://*.my.salesforce-setup.com/*"
+  ],
+  "icons": {
+    "16": "icons/icon16.jpeg",
+    "48": "icons/icon48.jpeg"
+  },
+  "content_scripts": [
+    {
+      "matches": [
+        "*://*.lightning.force.com/*",
+        "*://*.my.salesforce.com/*",
+        "*://*.my.salesforce-setup.com/*"
+      ],
+      "js": ["content.js"],
+      "css": ["styles.css", "modal.css"],
+      "run_at": "document_end"
+    }
+  ],
+  "background": {
+    "service_worker": "background.js"
+  }
+}

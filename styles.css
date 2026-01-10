@@ -1,0 +1,26 @@
+.sf-go-home-setup-button {
+  position: fixed;
+  top: 0px;
+  left: 65%;
+  width: 150px;
+  z-index: 9999;
+  padding: 8px 15px;
+  background-color: #0070d2;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: bold;
+  box-shadow: 2px 2px 5px rgba(0, 0, 0, 0.2);
+  transition: background-color 0.2s ease;
+}
+
+.sf-go-home-setup-button:disabled {
+  background-color: #c9c7c5;
+  cursor: not-allowed;
+}
+
+.sf-go-home-setup-button:hover {
+  background-color: #005fb2;
+}

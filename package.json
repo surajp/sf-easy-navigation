@@ -1,0 +1,19 @@
+{
+  "name": "sf-easy-navigation",
+  "version": "1.0.0",
+  "description": "Chrome extension for easier navigation in Salesforce setup menu and object manager",
+  "main": "content.js",
+  "keywords": [
+    "salesforce",
+    "chrome-extension",
+    "navigation",
+    "setup-menu",
+    "object-manager"
+  ],
+  "author": "Suraj Pillai",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/surajp/sf-easy-navigation.git"
+  }
+}
