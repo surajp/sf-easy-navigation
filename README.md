@@ -1,4 +1,4 @@
-# Salesforce Setup Go Home
+# Salesforce Easy Navigation Extension
 
 A Chrome extension that enhances Salesforce navigation by extracting and organizing setup menu links, managing Object Manager items, and providing quick access to admin features.
 
