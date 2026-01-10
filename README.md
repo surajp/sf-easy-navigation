@@ -2,7 +2,11 @@
 
 A Chrome extension that enhances Salesforce navigation by extracting and organizing setup menu links, managing Object Manager items, and providing quick access to admin features.
 
-_Note: This extension was built mainly for personal use, so it may not be fully polished, but it works well for me—feel free to use and modify it as needed._
+_Note: This extension was built mainly for personal use, so it may not be fully polished, but it works well for me—feel free to use and modify it as needed. It only works in Chrome as of now._
+
+## Motivation
+
+I built this mainly because I found navigating to the setup tab and back quite tedious. Setup always opens in a new tab, and going back to the home page from setup requires opening the app launcher or finding the original tab. A secondary annoyance was the quick find box in setup being a bit sluggish and rigid for my liking. I also added object search (similarly sluggish). "Login As User" was added later since that's something else I frequently use, and finding a user in the standard UI is also a sub-par experience.
 
 ## Features
 
