@@ -8,7 +8,8 @@ const HOME_PATH = "/lightning/page/home";
 const SETUP_HOME_PATH = "/lightning/setup/SetupOneHome/home";
 const OBJECT_MANAGER_PATH = "/lightning/setup/ObjectManager/home";
 const KEY_BASE = `sf-setup-links-${getDomain()}`;
-const SALESFORCE_API_VERSION = "60.0";
+const SALESFORCE_API_VERSION = "65.0";
+const CACHE_EXPIRY_DAYS = 60;
 const BUTTON_CLICK_DELAY_MS = 300;
 
 // --- Caches and State ---
@@ -425,6 +426,13 @@ async function saveObjectsCache(objectsCache, allDone = false) {
   }
 }
 
+function isCacheStale(lastUpdatedTimestamp) {
+  if (!lastUpdatedTimestamp) return true;
+  const now = Date.now();
+  const sixtyDays = CACHE_EXPIRY_DAYS * 24 * 60 * 60 * 1000;
+  return now - lastUpdatedTimestamp > sixtyDays;
+}
+
 async function shouldRefreshObjectsCache() {
   const key = KEY_BASE + "-objects-updated";
   const objectsCache = await retrieveOrCreateObjectsCache();
@@ -433,12 +441,7 @@ async function shouldRefreshObjectsCache() {
   }
   // Check if the cache is older than 1 hour
   const lastUpdated = (await chrome.storage.local.get([key]))[key];
-  if (lastUpdated) {
-    const now = Date.now();
-    const sixtyDays = 60 * 24 * 60 * 60 * 1000;
-    return now - lastUpdated > sixtyDays;
-  }
-  return true; // If no timestamp, refresh
+  return isCacheStale(lastUpdated);
 }
 
 async function shouldRefreshCache() {
@@ -449,12 +452,7 @@ async function shouldRefreshCache() {
   }
   // Check if the cache is older than 1 hour
   const lastUpdated = (await chrome.storage.local.get([key]))[key];
-  if (lastUpdated) {
-    const now = Date.now();
-    const sixtyDays = 60 * 24 * 60 * 60 * 1000;
-    return now - lastUpdated > sixtyDays;
-  }
-  return true; // If no timestamp, refresh
+  return isCacheStale(lastUpdated);
 }
 
 function bustCaches() {

@@ -31,6 +31,13 @@ A Chrome extension that enhances Salesforce navigation by extracting and organiz
 | **Triple Click** | Extract and cache all setup links                    |
 | **Ctrl+Click**   | Open navigation target in a new tab                  |
 
+### Initial Extraction
+
+When you login to an org for the first time after installing the extension, it has to first extract and cache all setup links and object links.
+To cache setup links, navigate to the Setup page and either double-click or triple-click the extension button. Wait for a minute approximately for the extraction to complete without navigating away from the page with the tab in focus.
+To cache object links, navigate to the Object Manager page and either double-click or triple-click the extension button. Wait till the page stops scrolling automatically.
+The cached links expire in 60 days now, its hardcoded, you can easily edit the code to change the expiry duration.
+
 ### Navigation Modal Tabs
 
 1. **Setup Links**: Browse all Salesforce setup menu items organized alphabetically with parent categories
