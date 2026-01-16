@@ -21,6 +21,7 @@ let clickTimer;
 let isExtracting = false; // Flag to prevent multiple extractions at once
 let _pinnedLinks = []; // Placeholder for pinned links
 let _pinnedObjects = []; // Placeholder for pinned objects
+let _recentUsers = []; // Placeholder for recently clicked users
 
 // --- Helper Function for Delay ---
 function delay(ms) {
@@ -271,6 +272,23 @@ async function searchUsers(searchTerm = "") {
   }
 }
 
+async function getUsersByIds(userIds) {
+  if (!userIds || userIds.length === 0) {
+    return { records: [] };
+  }
+
+  const fields = "Id, Name, Email, Username, LastLoginDate, IsActive";
+  const idsClause = userIds.map((id) => `'${id}'`).join(",");
+  const query = `SELECT ${fields} FROM User WHERE Id IN (${idsClause}) AND IsActive = true`;
+
+  try {
+    return await executeSoqlQuery(query);
+  } catch (error) {
+    console.error("Error fetching users by IDs:", error);
+    return { records: [] };
+  }
+}
+
 async function getLoginAsUrl(targetUserId) {
   if (!targetUserId) {
     throw new Error("Missing user identifier.");
@@ -301,7 +319,18 @@ async function fetchAndRenderLoginAsUsers(searchTerm, containerElement, tabConte
   if (!containerElement) return;
   showLoadingIndicator(containerElement);
   try {
-    const users = await searchUsers(searchTerm);
+    let users = await searchUsers(searchTerm);
+
+    if (!searchTerm) {
+      const recentUsersList = await retrieveOrCreateRecentUsersCache();
+      if (recentUsersList && recentUsersList.length > 0) {
+        const recentUsersData = await getUsersByIds(recentUsersList.slice(0, 10));
+        const recentIdsSet = new Set(recentUsersData.records.map((u) => u.Id));
+        const filteredRegularUsers = users.records.filter((u) => !recentIdsSet.has(u.Id));
+        users.records = [...recentUsersData.records, ...filteredRegularUsers];
+      }
+    }
+
     renderUserResults(containerElement, users, searchTerm);
     if (!searchTerm && tabContent) {
       tabContent.dataset.loaded = "true";
@@ -315,7 +344,7 @@ async function fetchAndRenderLoginAsUsers(searchTerm, containerElement, tabConte
   }
 }
 
-function renderUserResults(containerElement, users, searchTerm = "") {
+async function renderUserResults(containerElement, users, searchTerm = "") {
   containerElement.innerHTML = "";
   const usersContainer = document.createElement("div");
   usersContainer.classList.add("sf-users-container");
@@ -329,7 +358,24 @@ function renderUserResults(containerElement, users, searchTerm = "") {
     return;
   }
 
-  users.records.forEach((user) => {
+  await retrieveOrCreateRecentUsersCache();
+  const recentUsersList = _recentUsers || [];
+  const recentUsersMap = new Map(recentUsersList.map((id, index) => [id, index]));
+
+  const sortedUsers = [...users.records].sort((a, b) => {
+    const aRecentIndex = recentUsersMap.has(a.Id) ? recentUsersMap.get(a.Id) : -1;
+    const bRecentIndex = recentUsersMap.has(b.Id) ? recentUsersMap.get(b.Id) : -1;
+
+    if (aRecentIndex !== -1 && bRecentIndex !== -1) {
+      return aRecentIndex - bRecentIndex;
+    }
+    if (aRecentIndex !== -1) return -1;
+    if (bRecentIndex !== -1) return 1;
+
+    return a.Name.localeCompare(b.Name);
+  });
+
+  sortedUsers.forEach((user) => {
     const userRow = document.createElement("div");
     userRow.classList.add("sf-user-item");
     userRow.setAttribute("role", "button");
@@ -352,6 +398,7 @@ function renderUserResults(containerElement, users, searchTerm = "") {
 
     const handleLoginAs = async () => {
       try {
+        await updateRecentUsers(user.Id);
         const loginAsUrl = await getLoginAsUrl(user.Id);
         window.location.href = loginAsUrl;
         const modal = document.getElementById(MODAL_ID);
@@ -398,6 +445,41 @@ async function retrieveOrCreateObjectsCache() {
     objectsCache = {};
   }
   return objectsCache;
+}
+
+async function retrieveOrCreateRecentUsersCache() {
+  const key = KEY_BASE + "-recent-users";
+  let recentUsers = (await chrome.storage.local.get([key]))[key];
+
+  try {
+    recentUsers = recentUsers ? JSON.parse(recentUsers) : null;
+  } catch (e) {
+    console.error("Error parsing recent users cache from localStorage", e);
+    recentUsers = null;
+  }
+
+  if (!recentUsers || !Array.isArray(recentUsers) || recentUsers.length === 0) {
+    recentUsers = [];
+  }
+
+  _recentUsers = recentUsers;
+  return recentUsers;
+}
+
+async function updateRecentUsers(userId) {
+  const key = KEY_BASE + "-recent-users";
+  let recentUsers = await retrieveOrCreateRecentUsersCache();
+
+  const index = recentUsers.indexOf(userId);
+  if (index > -1) {
+    recentUsers.splice(index, 1);
+  }
+  recentUsers.unshift(userId);
+
+  _recentUsers = recentUsers;
+  await chrome.storage.local.set({
+    [key]: JSON.stringify(_recentUsers),
+  });
 }
 
 async function saveLinksCache(linksCache, allDone = false) {

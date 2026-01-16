@@ -70,6 +70,7 @@ Storage Keys: sf-setup-links-{domain}-links, -objects, -pinned-links, -pinned-ob
 - Navigation uses `https://<instance>/servlet/servlet.su?oid=<orgId>&suorgadminid=<selectedUserId>&retURL=<path>&targetURL=<path>` and closes the modal after redirect
 - `manifest.json` must include the `cookies` permission for this flow; keep it in sync if permissions change
 - Any future REST calls should reuse the cached session ID helper to avoid redundant cookie lookups and handle error messaging consistently
+- Track recently impersonated users per domain in chrome.storage.local using the `sf-setup-links-{domain}-recent-users` key, keeping the most recent logins first with no duplicates. Never clear this cache when busting other storage keys, and always handle missing or malformed cache data gracefully.
 
 ## Copilot Guidelines (from .github/copilot-instructions.md)
 
