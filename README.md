@@ -13,6 +13,7 @@ I built this mainly because I found navigating to the setup tab and back quite t
 - **Quick Navigation**: Single-click the button to navigate between Setup and Home pages. Double-click to open the navigation modal.
 - **Setup Links Tab**: Browse all Salesforce setup menu items organized alphabetically with search and filtering
 - **Object Manager Tab**: Access all Salesforce objects with quick search and navigation
+- **Object Quick Links**: Direct access to Fields, Validation Rules, Page Layouts, Record Types, Lightning Pages, Buttons & Actions, Field Sets, and Compact Layouts for each object
 - **Login As User Tab**: Search and login as other users (admin feature)
 - **Record ID Navigation**: Quickly navigate to any record by entering its ID
 - **Pin Favorites**: Pin frequently used links and objects for quick access
@@ -47,7 +48,7 @@ The cached links expire in 60 days now, its hardcoded, you can easily edit the c
 ### Navigation Modal Tabs
 
 1. **Setup Links**: Browse all Salesforce setup menu items organized alphabetically with parent categories
-2. **Object Manager**: Search and navigate to Salesforce objects
+2. **Object Manager**: Search and navigate to Salesforce objects with direct access to specific setup sections
 3. **Login As User**: Search active users by name, email, or username to login as them
 
 ### Record ID Navigation
@@ -92,7 +93,7 @@ sf-gohome-extn/
 
 ### Key Components
 
-- **content.js**: Handles DOM manipulation, link extraction, modal UI, and all user-facing features
+- **content.js**: Handles DOM manipulation, link extraction, modal UI, object quick links, and all user-facing features
 - **background.js**: Service worker that handles message passing and session cookie retrieval
 - **Chrome Storage**: Used for caching extracted links, objects, and pinned items per domain
 

@@ -13,7 +13,7 @@ To manually test the extension:
 
 ## Project Overview
 
-Chrome extension that enhances Salesforce navigation by extracting and organizing setup menu links alphabetically, managing Object Manager items, allowing users to pin items, providing search/filter functionality, and adding record ID navigation.
+Chrome extension that enhances Salesforce navigation by extracting and organizing setup menu links alphabetically, managing Object Manager items with quick links to specific setup sections, allowing users to pin items, providing search/filter functionality, and adding record ID navigation.
 
 ## Code Structure
 
@@ -57,7 +57,7 @@ Scrolling: Detect completion by comparing scroll positions, use delays for DOM u
 
 ## Extension Architecture
 
-Content Script (content.js): DOM interaction, link extraction/caching, modal UI, all user-facing logic (including Login As User tab)
+Content Script (content.js): DOM interaction, link extraction/caching, modal UI, object quick links, and all user-facing logic (including Login As User tab)
 Background Script (background.js): Message passing, cookie/session retrieval for Login As feature
 Storage Keys: sf-setup-links-{domain}-links, -objects, -pinned-links, -pinned-objects, -updated, -objects-updated
 
@@ -86,6 +86,15 @@ Follow existing patterns in content.js, use sf- prefix for CSS classes, add erro
 ## File Modification Priorities
 
 content.js (main logic), modal.css (UI/responsive), manifest.json (permissions/config only), background.js (message handling only), styles.css (main button only)
+
+## Object Quick Links Feature
+
+- Modal's Object Manager tab now includes quick links for direct navigation to specific object setup sections
+- Quick links include: Fields & Relationships, Validation Rules, Page Layouts, Record Types, Lightning Pages, Buttons & Actions, Field Sets, and Compact Layouts
+- URLs are constructed by extracting the base object URL and appending appropriate paths
+- Quick links are displayed as small, tag-like elements below each object entry in a two-row layout
+- Implementation includes URL cleanup to handle duplicate 'view' segments in constructed URLs
+- Feature maintains existing functionality: search, pinning, and navigation patterns
 
 ## Anti-Patterns to Avoid
 

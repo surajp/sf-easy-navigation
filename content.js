@@ -971,14 +971,63 @@ async function renderObjectsCloud(containerElement, objects, searchTerm = "") {
         return false;
       };
 
-      div.appendChild(link);
-
+// Create main row for object link and pin button
+      const mainRow = document.createElement("div");
+      mainRow.classList.add("sf-object-main-row");
+      mainRow.appendChild(link);
+      
       const pinBtn = document.createElement("button");
       pinBtn.textContent = _pinnedObjects.includes(value.href) ? "📍" : "📌";
       pinBtn.classList.add("sf-object-pin-button");
       pinBtn.onclick = () => toggleObjectPin(value.href);
-
-      div.appendChild(pinBtn);
+      mainRow.appendChild(pinBtn);
+      
+      div.appendChild(mainRow);
+      
+      // Create quick links row
+      const quickLinksRow = document.createElement("div");
+      quickLinksRow.classList.add("sf-object-quick-links");
+      
+      // Extract base URL for the object
+      let baseUrl = value.href;
+      // Remove any URL that ends with /Details/view to get clean object base
+      baseUrl = baseUrl.replace(/\/Details\/view$/, '');
+      // Also remove any URL that ends with just /view
+      baseUrl = baseUrl.replace(/\/view$/, '');
+      // Remove any remaining /view segments in the middle
+      baseUrl = baseUrl.replace(/\/view\//, '/');
+      
+      // Define quick links
+      const quickLinks = [
+        { label: "FIELDS", path: '/FieldsAndRelationships/view' },
+        { label: "RULES", path: '/ValidationRules/view' },
+        { label: "LAYOUTS", path: '/PageLayouts/view' },
+        { label: "TYPES", path: '/RecordTypes/view' },
+        { label: "PAGES", path: '/LightningPages/view' },
+        { label: "BUTTONS", path: '/ButtonsLinksActions/view' },
+        { label: "FIELDSETS", path: '/FieldSets/view' },
+        { label: "COMPACT", path: '/CompactLayouts/view' }
+      ];
+      
+      // Create and append quick links
+      quickLinks.forEach(quickLink => {
+        const quickLinkElement = document.createElement("a");
+        let constructedUrl = baseUrl + quickLink.path;
+        // Remove duplicate view segments
+        constructedUrl = constructedUrl.replace(/\/view\/([^\/]+)\/view$/, '/$1/view');
+        quickLinkElement.href = constructedUrl;
+        quickLinkElement.textContent = quickLink.label;
+        quickLinkElement.classList.add("sf-quick-link");
+        quickLinkElement.onclick = (e) => {
+          e.preventDefault();
+          window.location.href = quickLinkElement.href;
+          const modal = document.getElementById(MODAL_ID);
+          if (modal) modal.remove();
+        };
+        quickLinksRow.appendChild(quickLinkElement);
+      });
+      
+      div.appendChild(quickLinksRow);
       objectsContainer.appendChild(div);
     }
   }

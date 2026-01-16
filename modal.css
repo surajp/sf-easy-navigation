@@ -239,6 +239,10 @@
   white-space: nowrap;
 }
 
+.sf-object-link {
+  font-weight: 600; /* Make object names bold */
+}
+
 /* Pin Buttons */
 .sf-tag-cloud-pin-button,
 .sf-object-pin-button {
@@ -248,6 +252,34 @@
   padding: 4px;
   margin-left: 8px;
   font-size: 14px;
+}
+
+/* Object Quick Links */
+.sf-object-quick-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 6px;
+  padding-top: 6px;
+  border-top: 1px solid #e5e5e5;
+}
+
+.sf-quick-link {
+  font-size: 10px;
+  text-decoration: none;
+  color: #0070d2;
+  background-color: #f3f2f2;
+  border: 1px solid #dddbda;
+  border-radius: 3px;
+  padding: 2px 6px;
+  cursor: pointer;
+  transition: all 0.1s ease;
+}
+
+.sf-quick-link:hover {
+  background-color: #0070d2;
+  color: white;
+  border-color: #0070d2;
 }
 
 /* Parent Labels */
