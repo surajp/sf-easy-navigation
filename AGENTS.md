@@ -68,6 +68,7 @@ Storage Keys: sf-setup-links-{domain}-links, -objects, -pinned-links, -pinned-ob
 - Session ID is obtained by messaging `background.js`, which calls `chrome.cookies.get({ url: https://<my.salesforce.com domain>, name: "sid" })`
 - Background derives the correct My Domain via `getSalesforceDomainFromUrl` (handles `lightning.force.com` → `my.salesforce.com` and setup domains)
 - Navigation uses `https://<instance>/servlet/servlet.su?oid=<orgId>&suorgadminid=<selectedUserId>&retURL=<path>&targetURL=<path>` and closes the modal after redirect
+- Each user row includes a profile icon button (👤) that navigates directly to the user's detail page in Setup → Manage Users using the URL format `/lightning/setup/ManageUsersLightning/page?address=%2F{userid}%3Fnoredirect%3D1%26isUserEntityOverride%3D1%26retURL%3D%252Fsetup%252Fhome`, maintaining the Setup context and return URL
 - `manifest.json` must include the `cookies` permission for this flow; keep it in sync if permissions change
 - Any future REST calls should reuse the cached session ID helper to avoid redundant cookie lookups and handle error messaging consistently
 - Track recently impersonated users per domain in chrome.storage.local using the `sf-setup-links-{domain}-recent-users` key, keeping the most recent logins first with no duplicates. Never clear this cache when busting other storage keys, and always handle missing or malformed cache data gracefully.

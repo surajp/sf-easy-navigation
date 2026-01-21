@@ -149,6 +149,34 @@
   color: #706e6b;
 }
 
+.sf-user-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-left: 12px;
+}
+
+.sf-user-profile-button {
+  background: none;
+  border: 1px solid #dddbda;
+  border-radius: 4px;
+  cursor: pointer;
+  padding: 6px 10px;
+  font-size: 16px;
+  transition: all 0.2s;
+  background-color: white;
+}
+
+.sf-user-profile-button:hover {
+  background-color: #0070d2;
+  border-color: #0070d2;
+  transform: scale(1.1);
+}
+
+.sf-user-profile-button:active {
+  transform: scale(0.95);
+}
+
 .sf-error-message {
   text-align: center;
   padding: 12px;

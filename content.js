@@ -306,6 +306,10 @@ async function getLoginAsUrl(targetUserId) {
   return `${baseUrl}/servlet/servlet.su?oid=${orgId}&suorgadminid=${targetUserId}&retURL=${encodedPath}&targetURL=${encodedPath}`;
 }
 
+function getUserDetailPageUrl(userId) {
+  return `/lightning/setup/ManageUsersLightning/page?address=%2F${userId}%3Fnoredirect%3D1%26isUserEntityOverride%3D1%26retURL%3D%252Fsetup%252Fhome`;
+}
+
 function showLoadingIndicator(containerElement) {
   if (!containerElement) return;
   containerElement.innerHTML = "";
@@ -395,6 +399,26 @@ async function renderUserResults(containerElement, users, searchTerm = "") {
     userContent.appendChild(userName);
     userContent.appendChild(userDetails);
     userRow.appendChild(userContent);
+
+    const userActions = document.createElement("div");
+    userActions.classList.add("sf-user-actions");
+
+    const profileBtn = document.createElement("button");
+    profileBtn.textContent = "👤";
+    profileBtn.classList.add("sf-user-profile-button");
+    profileBtn.setAttribute("aria-label", "View user profile");
+    profileBtn.title = "View User Profile";
+
+    profileBtn.addEventListener("click", (event) => {
+      event.stopPropagation();
+      const userDetailUrl = getUserDetailPageUrl(user.Id);
+      window.location.href = userDetailUrl;
+      const modal = document.getElementById(MODAL_ID);
+      if (modal) modal.remove();
+    });
+
+    userActions.appendChild(profileBtn);
+    userRow.appendChild(userActions);
 
     const handleLoginAs = async () => {
       try {
