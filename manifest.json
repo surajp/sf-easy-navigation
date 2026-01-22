@@ -20,7 +20,19 @@
         "*://*.my.salesforce.com/*",
         "*://*.my.salesforce-setup.com/*"
       ],
-      "js": ["content.js"],
+      "js": [
+        "content/constants.js",
+        "content/state.js",
+        "content/storage.js",
+        "content/api.js",
+        "content/users.js",
+        "content/renderers.js",
+        "content/modal.js",
+        "content/objects.js",
+        "content/button.js",
+        "content/extraction.js",
+        "content/init.js"
+      ],
       "css": ["styles.css", "modal.css"],
       "run_at": "document_end"
     }

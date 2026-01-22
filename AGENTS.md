@@ -18,7 +18,7 @@ Chrome extension that enhances Salesforce navigation by extracting and organizin
 
 ## Code Structure
 
-Flat file structure: `manifest.json` (Chrome Extension V3 config), `background.js` (service worker), `content.js` (main logic ~840 lines), `styles.css`, `modal.css`, `icons/`
+Modular layout: `manifest.json` (Chrome Extension V3 config), `background.js` (service worker), `content/` (content script modules), `styles.css`, `modal.css`, `icons/`
 
 ## Naming Conventions
 
@@ -58,7 +58,7 @@ Scrolling: Detect completion by comparing scroll positions, use delays for DOM u
 
 ## Extension Architecture
 
-Content Script (content.js): DOM interaction, link extraction/caching, modal UI, object quick links, and all user-facing logic (including Login As User tab)
+Content Scripts (`content/*.js`): DOM interaction, link extraction/caching, modal UI, object quick links, and all user-facing logic (including Login As User tab)
 Background Script (background.js): Message passing, cookie/session retrieval for Login As feature
 Storage Keys: sf-setup-links-{domain}-links, -objects, -pinned-links, -pinned-objects, -updated, -objects-updated, -users, -users-updated, -recent-users
 
@@ -66,8 +66,8 @@ Storage Keys: sf-setup-links-{domain}-links, -objects, -pinned-links, -pinned-ob
 
 The extension uses hover-based interactions to reduce clicks:
 
-- Hover over main button to open navigation modal (configurable at top of content.js)
-- Hover over tab to switch tabs (configurable at top of content.js)
+- Hover over main button to open navigation modal (timings in `content/constants.js`)
+- Hover over tab to switch tabs (timings in `content/constants.js`)
 - Clicking the button still navigates between Home and Setup
 - Clicking the button cancels the hover timer and navigates immediately
 - Tab switching on hover only triggers if not already on that tab
@@ -103,11 +103,11 @@ When adding or modifying event listeners and timers:
 
 ## When Adding New Features
 
-Follow existing patterns in content.js, use sf- prefix for CSS classes, add error handling for Chrome API calls, consider cache invalidation, test on different Salesforce pages, ensure responsive design, add console logging for debugging
+Follow existing patterns in the modular content scripts (`content/`), use sf- prefix for CSS classes, add error handling for Chrome API calls, consider cache invalidation, test on different Salesforce pages, ensure responsive design, add console logging for debugging
 
 ## File Modification Priorities
 
-content.js (main logic), modal.css (UI/responsive), manifest.json (permissions/config only), background.js (message handling only), styles.css (main button only)
+content/ (main logic), modal.css (UI/responsive), manifest.json (permissions/config only), background.js (message handling only), styles.css (main button only)
 
 ## Object Quick Links Feature
 
@@ -124,6 +124,6 @@ Inline event handlers, deep nesting in extraction logic, blocking main thread, g
 
 ## Known Issues
 
-- `debugger` statement exists in `retrieveOrCreateLinksCache()` function (line 521) - should be removed before production use
+- None currently documented; flag regressions immediately in this file.
 
 This is a simple Chrome extension without a build pipeline. Keep it straightforward - no bundlers, no TypeScript, no complex tooling unless absolutely necessary.

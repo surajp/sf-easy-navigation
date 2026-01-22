@@ -89,7 +89,18 @@ The extension works on Salesforce Lightning URLs:
 ```
 sf-gohome-extn/
 ├── manifest.json          # Chrome Extension V3 configuration
-├── content.js            # Main extension logic (~1100 lines)
+├── content/              # Modular content script sources
+│   ├── constants.js      # Shared ids, paths, timings
+│   ├── state.js          # Runtime state + timers
+│   ├── storage.js        # Cache + pin utilities
+│   ├── api.js            # Salesforce REST helpers
+│   ├── users.js          # Login-as data fetching/render
+│   ├── renderers.js      # Setup/object list UI builders
+│   ├── modal.js          # Modal assembly + navigation
+│   ├── objects.js        # Object Manager extraction
+│   ├── button.js         # Floating button orchestration
+│   ├── extraction.js     # Async setup link crawling
+│   └── init.js           # Bootstrapping + listeners
 ├── background.js         # Service worker for message passing
 ├── styles.css            # Button styling
 ├── modal.css             # Modal UI styling
@@ -101,7 +112,7 @@ sf-gohome-extn/
 
 ### Key Components
 
-- **content.js**: Handles DOM manipulation, link extraction, modal UI, object quick links, and all user-facing features
+- **content/**: Modular content scripts that handle DOM manipulation, link extraction, modal UI, object quick links, login-as flows, and all user-facing features
 - **background.js**: Service worker that handles message passing and session cookie retrieval
 - **Chrome Storage**: Used for caching extracted links, objects, and pinned items per domain
 
@@ -121,7 +132,7 @@ sf-gohome-extn/
 
 ### Customizing Hover Delays
 
-You can easily adjust the hover interaction timings by modifying these constants at the top of `content.js`:
+Adjust hover interaction timings inside `content/constants.js`:
 
 - `BUTTON_HOVER_DELAY_MS` (default: 300ms): Time to hover over button before opening modal
 - `TAB_HOVER_DELAY_MS` (default: 10ms): Time to hover over tab before switching

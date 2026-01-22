@@ -2,7 +2,7 @@
   "name": "sf-easy-navigation",
   "version": "1.0.0",
   "description": "Chrome extension for easier navigation in Salesforce setup menu and object manager",
-  "main": "content.js",
+  "main": "content/init.js",
   "keywords": [
     "salesforce",
     "chrome-extension",
