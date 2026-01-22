@@ -13,12 +13,20 @@ const CACHE_EXPIRY_DAYS = 60;
 const USER_CACHE_EXPIRY_DAYS = 30;
 const BUTTON_CLICK_DELAY_MS = 300;
 
+// --- Hover Configuration (adjust these values to customize hover delays) ---
+const BUTTON_HOVER_DELAY_MS = 300; // Hover delay to open modal
+const TAB_HOVER_DELAY_MS = 10; // Hover delay to switch tabs
+
 // --- Caches and State ---
 let sessionIdCache = null;
 let orgIdCache = null;
 let currentButton;
+let buttonEventListenersAttached = false; // Track if button event listeners are attached
 let clickCount = 0;
 let clickTimer;
+let hoverTimer = null; // Timer for hover-based modal opening
+let tabHoverTimer = null; // Timer for hover-based tab switching
+let searchDebounceTimer = null; // Timer for debounced search
 let isExtracting = false; // Flag to prevent multiple extractions at once
 let _pinnedLinks = []; // Placeholder for pinned links
 let _pinnedObjects = []; // Placeholder for pinned objects
@@ -56,8 +64,16 @@ function updateButtonState() {
       currentButton = createButton();
       document.body.appendChild(currentButton);
       console.log("Salesforce Go Home/Setup Extension: Button added.");
-      currentButton.addEventListener("click", handleButtonClick);
+      buttonEventListenersAttached = false; // Reset flag for new button
     }
+  }
+
+  // Attach event listeners only once
+  if (currentButton && !buttonEventListenersAttached) {
+    currentButton.addEventListener("click", handleButtonClick);
+    currentButton.addEventListener("mouseenter", handleButtonHoverStart);
+    currentButton.addEventListener("mouseleave", handleButtonHoverEnd);
+    buttonEventListenersAttached = true;
   }
 
   if (currentButton) {
@@ -120,23 +136,41 @@ async function openModal() {
   displaySetupTagCloud();
 }
 
+function handleButtonHoverStart() {
+  // Clear any existing hover timer
+  if (hoverTimer) {
+    clearTimeout(hoverTimer);
+  }
+  
+  // Start hover timer to open modal
+  hoverTimer = setTimeout(() => {
+    openModal();
+  }, BUTTON_HOVER_DELAY_MS);
+}
+
+function handleButtonHoverEnd() {
+  // Clear hover timer when mouse leaves the button
+  if (hoverTimer) {
+    clearTimeout(hoverTimer);
+    hoverTimer = null;
+  }
+}
+
 function handleButtonClick(event) {
-  // ... (keep your handleButtonClick logic, but maybe disable during extraction)
+  // Single click navigates (preserving existing behavior)
   event.preventDefault();
   if (isExtracting) return; // Don't navigate while extracting
 
-  const isCtrlPressed = event.ctrlKey || event.metaKey; // Check for Ctrl or Cmd key
-  clickCount++;
-  if (clickCount === 1) {
-    if (isCtrlPressed) {
-      navigateToHome(isCtrlPressed);
-      return;
-    }
-    clickTimer = setTimeout(() => navigateToHome(isCtrlPressed), BUTTON_CLICK_DELAY_MS); // Time window for multiple clicks
-  } else if (clickCount === 2) {
-    clearTimeout(clickTimer);
-    clickTimer = setTimeout(openModal, BUTTON_CLICK_DELAY_MS);
+  // Clear hover timer on click to prevent opening modal
+  if (hoverTimer) {
+    clearTimeout(hoverTimer);
+    hoverTimer = null;
   }
+
+  const isCtrlPressed = event.ctrlKey || event.metaKey; // Check for Ctrl or Cmd key
+  
+  // Single click navigates immediately
+  navigateToHome(isCtrlPressed);
 }
 
 function navigateToHome(isCtrlPressed) {
@@ -450,7 +484,7 @@ async function renderUserResults(containerElement, users, searchTerm = "") {
       const userDetailUrl = getUserDetailPageUrl(user.Id);
       window.location.href = userDetailUrl;
       const modal = document.getElementById(MODAL_ID);
-      if (modal) modal.remove();
+      if (modal) cleanupModal(modal);
     });
 
     userActions.appendChild(profileBtn);
@@ -462,7 +496,7 @@ async function renderUserResults(containerElement, users, searchTerm = "") {
         const loginAsUrl = await getLoginAsUrl(user.Id);
         window.location.href = loginAsUrl;
         const modal = document.getElementById(MODAL_ID);
-        if (modal) modal.remove();
+        if (modal) cleanupModal(modal);
       } catch (error) {
         console.error("Error logging in as user:", error);
         alert("Failed to login as user: " + error.message);
@@ -679,11 +713,29 @@ async function bustObjectsCache() {
   await chrome.storage.local.remove([objectsKey, objectsTsKey]);
 }
 
+function cleanupModal(modal) {
+  // Clear any active timers
+  if (tabHoverTimer) {
+    clearTimeout(tabHoverTimer);
+    tabHoverTimer = null;
+  }
+  
+  if (searchDebounceTimer) {
+    clearTimeout(searchDebounceTimer);
+    searchDebounceTimer = null;
+  }
+  
+  // Remove the modal from DOM (which removes event listeners automatically for modern browsers)
+  if (modal && modal.parentNode) {
+    modal.remove();
+  }
+}
+
 async function displaySetupTagCloud(searchTerm = "", isLoading = false) {
   let existingModal = document.getElementById(MODAL_ID);
   if (existingModal && !isLoading) {
     // Don't remove if just updating loading state
-    existingModal.remove();
+    cleanupModal(existingModal);
     existingModal = null; // Reset to allow re-creation
   }
 
@@ -737,6 +789,14 @@ async function displaySetupTagCloud(searchTerm = "", isLoading = false) {
     setupTabBtn.addEventListener("click", () => switchTab("setup"));
     objectsTabBtn.addEventListener("click", () => switchTab("objects"));
     loginAsTabBtn.addEventListener("click", () => switchTab("loginas"));
+    
+    // Add hover handlers for tab switching
+    setupTabBtn.addEventListener("mouseenter", () => handleTabHoverStart("setup"));
+    setupTabBtn.addEventListener("mouseleave", handleTabHoverEnd);
+    objectsTabBtn.addEventListener("mouseenter", () => handleTabHoverStart("objects"));
+    objectsTabBtn.addEventListener("mouseleave", handleTabHoverEnd);
+    loginAsTabBtn.addEventListener("mouseenter", () => handleTabHoverStart("loginas"));
+    loginAsTabBtn.addEventListener("mouseleave", handleTabHoverEnd);
 
     // Add record ID navigation box (right side)
     const recordNavContainer = document.createElement("div");
@@ -859,19 +919,31 @@ async function displaySetupTagCloud(searchTerm = "", isLoading = false) {
     searchInput.type = "text";
     searchInput.placeholder = "Filter links or search users...";
     searchInput.classList.add("sf-modal-search-input");
-    searchInput.addEventListener("input", async (event) => {
+    searchInput.addEventListener("input", (event) => {
+      // Clear existing debounce timer
+      if (searchDebounceTimer) {
+        clearTimeout(searchDebounceTimer);
+      }
+      
+      const searchTerm = event.target.value.trim();
+      
+      // Debounce search for Login As tab (API calls), instant for others (local filtering)
       const activeTabButton = document.querySelector(".sf-tab-button.sf-tab-active");
       const currentTab = activeTabButton ? activeTabButton.dataset.tab : "setup";
-      const searchTerm = event.target.value.trim();
-      if (currentTab === "setup") {
-        const currentCache = await retrieveOrCreateLinksCache();
-        renderTagCloud(setupTabContent, currentCache, searchTerm);
-      } else if (currentTab === "objects") {
-        const objectsCache = await retrieveOrCreateObjectsCache();
-        renderObjectsCloud(objectsTabContent, objectsCache, searchTerm);
-      } else if (currentTab === "loginas") {
-        fetchAndRenderLoginAsUsers(searchTerm, loginAsResultsContainer, loginAsTabContent);
-      }
+      
+      const debounceDelay = currentTab === "loginas" ? 300 : 0;
+      
+      searchDebounceTimer = setTimeout(async () => {
+        if (currentTab === "setup") {
+          const currentCache = await retrieveOrCreateLinksCache();
+          renderTagCloud(setupTabContent, currentCache, searchTerm);
+        } else if (currentTab === "objects") {
+          const objectsCache = await retrieveOrCreateObjectsCache();
+          renderObjectsCloud(objectsTabContent, objectsCache, searchTerm);
+        } else if (currentTab === "loginas") {
+          fetchAndRenderLoginAsUsers(searchTerm, loginAsResultsContainer, loginAsTabContent);
+        }
+      }, debounceDelay);
     });
     modal.appendChild(searchInput);
     // Add the tab content containers to the modal
@@ -891,7 +963,7 @@ async function displaySetupTagCloud(searchTerm = "", isLoading = false) {
     closeButton.textContent = "Close";
     closeButton.classList.add("sf-modal-close-button");
     closeButton.addEventListener("click", () => {
-      modal.remove();
+      cleanupModal(modal);
     });
     modal.appendChild(closeButton);
 
@@ -978,6 +1050,32 @@ function navigateToRecord(recordId) {
   // Navigate to the record
   const recordUrl = `${window.location.origin}/${recordId}`;
   window.location.href = recordUrl;
+}
+
+function handleTabHoverStart(tabName) {
+  // Only switch tabs on hover if it's not already active
+  const activeTabButton = document.querySelector(".sf-tab-button.sf-tab-active");
+  if (activeTabButton && activeTabButton.dataset.tab === tabName) {
+    return; // Already on this tab, no need to set timer
+  }
+  
+  // Clear any existing tab hover timer
+  if (tabHoverTimer) {
+    clearTimeout(tabHoverTimer);
+  }
+  
+  // Start tab hover timer to switch tabs
+  tabHoverTimer = setTimeout(() => {
+    switchTab(tabName);
+  }, TAB_HOVER_DELAY_MS);
+}
+
+function handleTabHoverEnd() {
+  // Clear tab hover timer when mouse leaves the tab button
+  if (tabHoverTimer) {
+    clearTimeout(tabHoverTimer);
+    tabHoverTimer = null;
+  }
 }
 
 function switchTab(tabName) {
@@ -1096,7 +1194,7 @@ async function renderTagCloud(containerElement, links, searchTerm = "") {
         e.preventDefault(); // Prevent default navigation
         window.location.href = link.href; // Navigate manually
         const modal = document.getElementById(MODAL_ID);
-        if (modal) modal.remove(); // Close modal on click
+        if (modal) cleanupModal(modal); // Close modal on click
         return false;
       };
       div.appendChild(link);
@@ -1181,7 +1279,7 @@ async function renderObjectsCloud(containerElement, objects, searchTerm = "") {
         e.preventDefault();
         window.location.href = link.href;
         const modal = document.getElementById(MODAL_ID);
-        if (modal) modal.remove();
+        if (modal) cleanupModal(modal);
         return false;
       };
 
@@ -1236,7 +1334,7 @@ async function renderObjectsCloud(containerElement, objects, searchTerm = "") {
           e.preventDefault();
           window.location.href = quickLinkElement.href;
           const modal = document.getElementById(MODAL_ID);
-          if (modal) modal.remove();
+          if (modal) cleanupModal(modal);
         };
         quickLinksRow.appendChild(quickLinkElement);
       });

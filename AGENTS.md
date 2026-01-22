@@ -7,8 +7,9 @@ This file provides guidance for AI agents working on the sf-gohome-extn Chrome e
 This project has no build, lint, or test infrastructure configured. The package.json only contains a placeholder test command.
 
 To manually test the extension:
+
 1. Load the extension in Chrome (chrome://extensions -> Developer mode -> Load unpacked)
-2. Navigate to a Salesforce instance (*://*.lightning.force.com/*)
+2. Navigate to a Salesforce instance (_://_.lightning.force.com/\*)
 3. Verify functionality manually
 
 ## Project Overview
@@ -21,10 +22,10 @@ Flat file structure: `manifest.json` (Chrome Extension V3 config), `background.j
 
 ## Naming Conventions
 
-Constants: `UPPER_SNAKE_CASE` (BUTTON_ID, MODAL_ID, SETUP_PATH_REGEX)
-Functions: `camelCase` (createButton, handleDoubleClick, updateButtonState)
-Variables: `camelCase` (currentButton, clickCount), prefix private vars with `_` (_pinnedLinks)
-CSS classes: `sf-*` prefix with kebab-case (.sf-go-home-setup-button, .sf-setup-tag-cloud-modal)
+Constants: `UPPER_SNAKE_CASE` (BUTTON*ID, MODAL_ID, SETUP_PATH_REGEX, BUTTON_HOVER_DELAY_MS, TAB_HOVER_DELAY_MS, BUTTON_CLICK_DELAY_MS, SALESFORCE_API_VERSION, CACHE_EXPIRY_DAYS, USER_CACHE_EXPIRY_DAYS)
+Functions: `camelCase` (createButton, handleDoubleClick, updateButtonState, handleButtonHoverStart, handleTabHoverStart, cleanupModal)
+Variables: `camelCase` (currentButton, clickCount, hoverTimer, tabHoverTimer, searchDebounceTimer), prefix private vars with `*`(_pinnedLinks, _pinnedObjects, _recentUsers)
+CSS classes:`sf-\*` prefix with kebab-case (.sf-go-home-setup-button, .sf-setup-tag-cloud-modal)
 
 ## JavaScript Patterns
 
@@ -52,14 +53,34 @@ Use `---` separators for major sections, keep concise and meaningful, explain "w
 
 ## Salesforce DOM Work
 
-Selectors: Use data attributes (data-placement), slds-* classes, query from appropriate parent
+Selectors: Use data attributes (data-placement), slds-\* classes, query from appropriate parent
 Scrolling: Detect completion by comparing scroll positions, use delays for DOM updates, handle dynamic loading
 
 ## Extension Architecture
 
 Content Script (content.js): DOM interaction, link extraction/caching, modal UI, object quick links, and all user-facing logic (including Login As User tab)
 Background Script (background.js): Message passing, cookie/session retrieval for Login As feature
-Storage Keys: sf-setup-links-{domain}-links, -objects, -pinned-links, -pinned-objects, -updated, -objects-updated
+Storage Keys: sf-setup-links-{domain}-links, -objects, -pinned-links, -pinned-objects, -updated, -objects-updated, -users, -users-updated, -recent-users
+
+## Hover Configuration
+
+The extension uses hover-based interactions to reduce clicks:
+
+- Hover over main button to open navigation modal (configurable at top of content.js)
+- Hover over tab to switch tabs (configurable at top of content.js)
+- Clicking the button still navigates between Home and Setup
+- Clicking the button cancels the hover timer and navigates immediately
+- Tab switching on hover only triggers if not already on that tab
+
+## Memory Management
+
+When adding or modifying event listeners and timers:
+
+1. Use cleanup functions: Always define `cleanupModal()` to clear timers before removing DOM elements
+2. Prevent duplicate listeners: Track attachment state with flags like `buttonEventListenersAttached`
+3. Clear all timers: Clear `hoverTimer`, `tabHoverTimer`, `searchDebounceTimer` in cleanup functions
+4. Debounce input handlers: Use `searchDebounceTimer` for search input to prevent excessive function calls
+5. Use `cleanupModal(modal)` instead of `modal.remove()` everywhere to ensure proper cleanup
 
 ## Login As User Feature
 
@@ -100,5 +121,9 @@ content.js (main logic), modal.css (UI/responsive), manifest.json (permissions/c
 ## Anti-Patterns to Avoid
 
 Inline event handlers, deep nesting in extraction logic, blocking main thread, global pollution, duplicate code
+
+## Known Issues
+
+- `debugger` statement exists in `retrieveOrCreateLinksCache()` function (line 521) - should be removed before production use
 
 This is a simple Chrome extension without a build pipeline. Keep it straightforward - no bundlers, no TypeScript, no complex tooling unless absolutely necessary.

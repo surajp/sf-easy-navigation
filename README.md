@@ -10,7 +10,8 @@ I built this mainly because I found navigating to the setup tab and back quite t
 
 ## Features
 
-- **Quick Navigation**: Single-click the button to navigate between Setup and Home pages. Double-click to open the navigation modal.
+- **Quick Navigation**: Single-click button to navigate between Setup and Home pages. Hover over button for 0.5 seconds to open the navigation modal.
+- **Hover-Based Interactions**: Hover over tabs for 150ms to switch between them, reducing clicks and improving efficiency
 - **Setup Links Tab**: Browse all Salesforce setup menu items organized alphabetically with search and filtering
 - **Object Manager Tab**: Access all Salesforce objects with quick search and navigation
 - **Object Quick Links**: Direct access to Fields, Validation Rules, Page Layouts, Record Types, Lightning Pages, Buttons & Actions, Field Sets, and Compact Layouts for each object
@@ -19,6 +20,7 @@ I built this mainly because I found navigating to the setup tab and back quite t
 - **Pin Favorites**: Pin frequently used links and objects for quick access
 - **Persistent Cache**: Links and objects are cached locally for fast subsequent access
 - **Smart Extraction**: Automatically extracts all setup links by expanding the navigation tree
+- **Memory Efficient**: Proper cleanup of event listeners and timers prevents memory leaks
 
 ## Installation
 
@@ -31,19 +33,25 @@ I built this mainly because I found navigating to the setup tab and back quite t
 
 ### Button Actions
 
-| Action           | Description                                          |
-| ---------------- | ---------------------------------------------------- |
-| **Single Click** | Navigate to Home (if on Setup) or Setup (if on Home) |
-| **Double Click** | Open the navigation modal                            |
-| **Triple Click** | Extract and cache all setup links                    |
-| **Ctrl+Click**   | Open navigation target in a new tab                  |
+| Action            | Description                                          |
+| ----------------- | ---------------------------------------------------- |
+| **Single Click**  | Navigate to Home (if on Setup) or Setup (if on Home) |
+| **Hover (500ms)** | Open the navigation modal                            |
+| **Triple Click**  | Extract and cache all setup links                    |
+| **Ctrl+Click**    | Open navigation target in a new tab                  |
+
+### Hover-Based Tab Switching
+
+Once the navigation modal is open, simply hover over any tab for 150ms to switch to it. This reduces the number of clicks needed to access different features. Clicking tabs still works for immediate switching.
 
 ### Initial Extraction
 
 When you login to an org for the first time after installing the extension, it has to first extract and cache all setup links and object links.
-To cache setup links, navigate to the Setup page and either double-click or triple-click the extension button. Wait for a minute approximately for the extraction to complete without navigating away from the page with the tab in focus.
-To cache object links, navigate to the Object Manager page and either double-click or triple-click the extension button. Wait till the page stops scrolling automatically.
+To cache setup links, navigate to the Setup page and either double-click or triple-click extension button. Wait for a minute approximately for the extraction to complete without navigating away from the page with the tab in focus.
+To cache object links, navigate to the Object Manager page and either double-click or triple-click extension button. Wait till the page stops scrolling automatically.
 The cached links expire in 60 days now, its hardcoded, you can easily edit the code to change the expiry duration.
+
+**Note**: Hover-based modal opening works for navigation only. For extraction, use double/triple-click as described above.
 
 ### Navigation Modal Tabs
 
@@ -103,9 +111,20 @@ sf-gohome-extn/
 - `sf-setup-links-{domain}-objects`: Cached Object Manager objects
 - `sf-setup-links-{domain}-pinned-links`: Pinned setup links
 - `sf-setup-links-{domain}-pinned-objects`: Pinned objects
-- `sf-setup-links-{domain}-updated`: Last cache update timestamp
+- `sf-setup-links-{domain}-updated`: Last cache update timestamp (setup links)
+- `sf-setup-links-{domain}-objects-updated`: Last cache update timestamp (objects)
+- `sf-setup-links-{domain}-users-updated`: Last cache update timestamp (users)
+- `sf-setup-links-{domain}-users`: Cached user data for Login As feature
+- `sf-setup-links-{domain}-recent-users`: Recently impersonated users (not cleared with cache bust)
 
 ## Development
+
+### Customizing Hover Delays
+
+You can easily adjust the hover interaction timings by modifying these constants at the top of `content.js`:
+
+- `BUTTON_HOVER_DELAY_MS` (default: 300ms): Time to hover over button before opening modal
+- `TAB_HOVER_DELAY_MS` (default: 10ms): Time to hover over tab before switching
 
 ### Running in Development
 
@@ -124,8 +143,9 @@ The extension uses descriptive console logging with context. Check the browser c
 
 ### Cache Invalidation
 
-- Setup links cache expires after 20 days
+- Setup links cache expires after 60 days
 - Objects cache expires after 60 days
+- Users cache expires after 30 days
 - Double-click the button while on the appropriate page to force refresh
 
 ## Browser Support
