@@ -14,6 +14,8 @@
   display: flex;
   flex-direction: column;
   overflow: hidden;
+  opacity: 0;
+  animation: sf-modal-open 360ms cubic-bezier(0.33, 0.1, 0.21, 1) forwards;
 }
 
 .sf-setup-tag-cloud-modal h2 {
@@ -219,10 +221,38 @@
   flex: 1;
   overflow-y: auto;
   max-height: calc(80vh - 180px);
+  opacity: 0;
+  transform: translateY(12px);
+  transition: opacity 240ms cubic-bezier(0.4, 0, 0.2, 1), transform 240ms cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .sf-tab-content.sf-tab-active {
   display: block;
+  opacity: 1;
+  transform: translateY(0);
+  animation: sf-tab-enter 320ms cubic-bezier(0.33, 0.1, 0.21, 1);
+}
+
+@keyframes sf-modal-open {
+  from {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1);
+  }
+}
+
+@keyframes sf-tab-enter {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 /* Tab Refresh Button */
