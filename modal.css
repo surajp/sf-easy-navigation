@@ -261,10 +261,18 @@
 }
 
 /* Tag/Object Items */
-.sf-tag-cloud-item,
-.sf-object-item {
+.sf-tag-cloud-item {
   display: flex;
   align-items: center;
+  padding: 8px;
+  border-radius: 4px;
+  background-color: #f8f8f8;
+  transition: background-color 0.2s;
+}
+
+.sf-object-item {
+  display: flex;
+  flex-direction: column;
   padding: 8px;
   border-radius: 4px;
   background-color: #f8f8f8;
@@ -291,10 +299,23 @@
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+  cursor: pointer;
+}
+
+.sf-tag-cloud-tag:hover,
+.sf-object-link:hover {
+  text-decoration: underline;
 }
 
 .sf-object-link {
   font-weight: 600; /* Make object names bold */
+}
+
+/* Object Main Row */
+.sf-object-main-row {
+  display: flex;
+  align-items: center;
+  width: 100%;
 }
 
 /* Pin Buttons */

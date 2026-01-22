@@ -10,6 +10,7 @@ const OBJECT_MANAGER_PATH = "/lightning/setup/ObjectManager/home";
 const KEY_BASE = `sf-setup-links-${getDomain()}`;
 const SALESFORCE_API_VERSION = "65.0";
 const CACHE_EXPIRY_DAYS = 60;
+const USER_CACHE_EXPIRY_DAYS = 30;
 const BUTTON_CLICK_DELAY_MS = 300;
 
 // --- Caches and State ---
@@ -315,19 +316,58 @@ function showLoadingIndicator(containerElement) {
   containerElement.appendChild(loadingWrapper);
 }
 
-async function fetchAndRenderLoginAsUsers(searchTerm, containerElement, tabContent) {
+async function fetchAndRenderLoginAsUsers(searchTerm, containerElement, tabContent, forceRefresh = false) {
   if (!containerElement) return;
   showLoadingIndicator(containerElement);
   try {
-    let users = await searchUsers(searchTerm);
+    let users;
+    const shouldRefresh = forceRefresh || await shouldRefreshUsersCache();
+    
+    if (shouldRefresh) {
+      // Fetch from API and update cache
+      const apiResult = await searchUsers("");
+      const usersCache = {
+        records: apiResult.records.map(user => ({
+          Id: user.Id,
+          Name: user.Name,
+          Email: user.Email,
+          Username: user.Username,
+          LastLoginDate: user.LastLoginDate,
+          IsActive: user.IsActive
+        }))
+      };
+      await saveUsersCache(usersCache, true);
+      users = usersCache;
+    } else {
+      // Use cached data
+      users = await retrieveOrCreateUsersCache();
+    }
 
+    // Filter by search term if provided
+    if (searchTerm) {
+      const sanitizedTerm = searchTerm.trim().toLowerCase();
+      users.records = users.records.filter(user =>
+        user.Name.toLowerCase().includes(sanitizedTerm) ||
+        user.Username.toLowerCase().includes(sanitizedTerm) ||
+        (user.Email && user.Email.toLowerCase().includes(sanitizedTerm))
+      );
+    }
+
+    // Add recent users to the top if no search term
     if (!searchTerm) {
       const recentUsersList = await retrieveOrCreateRecentUsersCache();
       if (recentUsersList && recentUsersList.length > 0) {
-        const recentUsersData = await getUsersByIds(recentUsersList.slice(0, 10));
-        const recentIdsSet = new Set(recentUsersData.records.map((u) => u.Id));
+        // Get recent users from cache instead of making an API call
+        const recentUsersFromCache = users.records.filter(u => recentUsersList.includes(u.Id));
+        const recentIdsSet = new Set(recentUsersFromCache.map((u) => u.Id));
         const filteredRegularUsers = users.records.filter((u) => !recentIdsSet.has(u.Id));
-        users.records = [...recentUsersData.records, ...filteredRegularUsers];
+        
+        // Sort recent users by their position in recentUsersList
+        const recentUsersSorted = recentUsersFromCache.sort((a, b) => {
+          return recentUsersList.indexOf(a.Id) - recentUsersList.indexOf(b.Id);
+        });
+        
+        users.records = [...recentUsersSorted, ...filteredRegularUsers];
       }
     }
 
@@ -390,7 +430,7 @@ async function renderUserResults(containerElement, users, searchTerm = "") {
 
     const userDetails = document.createElement("div");
     userDetails.classList.add("sf-user-details");
-    userDetails.textContent = `${user.Username} - ${user.Email}`;
+    userDetails.textContent = user.Email ? `${user.Username} - ${user.Email}` : user.Username;
 
     userContent.appendChild(userName);
     userContent.appendChild(userDetails);
@@ -502,6 +542,66 @@ async function updateRecentUsers(userId) {
   });
 }
 
+async function retrieveOrCreateUsersCache() {
+  const key = KEY_BASE + "-users";
+  let usersCache = (await chrome.storage.local.get([key]))[key];
+
+  try {
+    usersCache = usersCache ? JSON.parse(usersCache) : { records: [] };
+  } catch (e) {
+    console.error("Error parsing users cache from localStorage", e);
+    usersCache = { records: [] };
+  }
+  return usersCache;
+}
+
+async function saveUsersCache(usersCache, allDone = false) {
+  const usersKey = KEY_BASE + "-users";
+  const tsKey = KEY_BASE + "-users-updated";
+  await chrome.storage.local.set({
+    [usersKey]: JSON.stringify(usersCache),
+  });
+  if (allDone) {
+    await chrome.storage.local.set({
+      [tsKey]: Date.now().toString(),
+    });
+  }
+}
+
+async function shouldRefreshUsersCache() {
+  const key = KEY_BASE + "-users-updated";
+  const usersCache = await retrieveOrCreateUsersCache();
+  if (!usersCache.records || usersCache.records.length === 0) {
+    return true;
+  }
+  const lastUpdated = (await chrome.storage.local.get([key]))[key];
+  if (!lastUpdated) return true;
+  const now = Date.now();
+  const thirtyDays = USER_CACHE_EXPIRY_DAYS * 24 * 60 * 60 * 1000;
+  return now - parseInt(lastUpdated) > thirtyDays;
+}
+
+async function refreshUsersCache() {
+  try {
+    const users = await searchUsers("");
+    const usersCache = {
+      records: users.records.map(user => ({
+        Id: user.Id,
+        Name: user.Name,
+        Email: user.Email,
+        Username: user.Username,
+        LastLoginDate: user.LastLoginDate,
+        IsActive: user.IsActive
+      }))
+    };
+    await saveUsersCache(usersCache, true);
+    return usersCache;
+  } catch (error) {
+    console.error("Error refreshing users cache:", error);
+    throw error;
+  }
+}
+
 async function saveLinksCache(linksCache, allDone = false) {
   const linkskey = KEY_BASE + "-links";
   const tsKey = KEY_BASE + "-updated";
@@ -560,9 +660,11 @@ async function shouldRefreshCache() {
 function bustCaches() {
   const linksKey = KEY_BASE + "-links";
   const objectsKey = KEY_BASE + "-objects";
+  const usersKey = KEY_BASE + "-users";
   const linksTsKey = KEY_BASE + "-updated";
   const objectsTsKey = KEY_BASE + "-objects-updated";
-  chrome.storage.local.remove([linksKey, linksTsKey, objectsKey, objectsTsKey]);
+  const usersTsKey = KEY_BASE + "-users-updated";
+  chrome.storage.local.remove([linksKey, linksTsKey, objectsKey, objectsTsKey, usersKey, usersTsKey]);
 }
 
 async function bustLinksCache() {
@@ -734,6 +836,19 @@ async function displaySetupTagCloud(searchTerm = "", isLoading = false) {
     const loginAsTabContent = document.createElement("div");
     loginAsTabContent.classList.add("sf-tab-content");
     loginAsTabContent.dataset.tab = "loginas";
+
+    const loginAsRefreshContainer = document.createElement("div");
+    loginAsRefreshContainer.classList.add("sf-tab-refresh-container");
+    const loginAsRefreshBtn = document.createElement("button");
+    loginAsRefreshBtn.textContent = "🔄 Refresh Users";
+    loginAsRefreshBtn.classList.add("sf-tab-refresh-button");
+    loginAsRefreshBtn.addEventListener("click", async () => {
+      const resultsContainer = loginAsTabContent.querySelector(".sf-users-container-wrapper");
+      const searchInput = modal.querySelector(".sf-modal-search-input");
+      await fetchAndRenderLoginAsUsers(searchInput ? searchInput.value.trim() : "", resultsContainer, loginAsTabContent, true);
+    });
+    loginAsRefreshContainer.appendChild(loginAsRefreshBtn);
+    loginAsTabContent.appendChild(loginAsRefreshContainer);
 
     const loginAsResultsContainer = document.createElement("div");
     loginAsResultsContainer.classList.add("sf-users-container-wrapper");
