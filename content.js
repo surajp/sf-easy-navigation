@@ -32,6 +32,10 @@ let _pinnedLinks = []; // Placeholder for pinned links
 let _pinnedObjects = []; // Placeholder for pinned objects
 let _recentUsers = []; // Placeholder for recently clicked users
 
+function modalIsCurrentlyOpen() {
+  return Boolean(document.getElementById(MODAL_ID));
+}
+
 // --- Helper Function for Delay ---
 function delay(ms) {
   return new Promise((resolve) => {
@@ -137,6 +141,9 @@ async function openModal() {
 }
 
 function handleButtonHoverStart() {
+  if (modalIsCurrentlyOpen()) {
+    return;
+  }
   // Clear any existing hover timer
   if (hoverTimer) {
     clearTimeout(hoverTimer);
@@ -144,7 +151,9 @@ function handleButtonHoverStart() {
   
   // Start hover timer to open modal
   hoverTimer = setTimeout(() => {
-    openModal();
+    if (!modalIsCurrentlyOpen()) {
+      openModal();
+    }
   }, BUTTON_HOVER_DELAY_MS);
 }
 
