@@ -225,6 +225,32 @@
   display: block;
 }
 
+/* Tab Refresh Button */
+.sf-tab-refresh-container {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 12px;
+}
+
+.sf-tab-refresh-button {
+  padding: 6px 12px;
+  background-color: #0070d2;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 12px;
+  transition: background-color 0.2s;
+}
+
+.sf-tab-refresh-button:hover {
+  background-color: #005fb2;
+}
+
+.sf-tab-refresh-button:active {
+  background-color: #004a8f;
+}
+
 /* Tag Cloud Container */
 .sf-tag-cloud-container,
 .sf-objects-container {

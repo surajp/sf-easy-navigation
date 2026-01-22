@@ -135,10 +135,6 @@ function handleButtonClick(event) {
   } else if (clickCount === 2) {
     clearTimeout(clickTimer);
     clickTimer = setTimeout(openModal, BUTTON_CLICK_DELAY_MS);
-  } else if (clickCount === 3) {
-    clearTimeout(clickTimer);
-    bustCaches();
-    openModal();
   }
 }
 
@@ -569,6 +565,18 @@ function bustCaches() {
   chrome.storage.local.remove([linksKey, linksTsKey, objectsKey, objectsTsKey]);
 }
 
+async function bustLinksCache() {
+  const linksKey = KEY_BASE + "-links";
+  const linksTsKey = KEY_BASE + "-updated";
+  await chrome.storage.local.remove([linksKey, linksTsKey]);
+}
+
+async function bustObjectsCache() {
+  const objectsKey = KEY_BASE + "-objects";
+  const objectsTsKey = KEY_BASE + "-objects-updated";
+  await chrome.storage.local.remove([objectsKey, objectsTsKey]);
+}
+
 async function displaySetupTagCloud(searchTerm = "", isLoading = false) {
   let existingModal = document.getElementById(MODAL_ID);
   if (existingModal && !isLoading) {
@@ -662,9 +670,66 @@ async function displaySetupTagCloud(searchTerm = "", isLoading = false) {
     setupTabContent.classList.add("sf-tab-content", "sf-tab-active");
     setupTabContent.dataset.tab = "setup";
 
+    // Add refresh button for Setup Links tab
+    const setupRefreshContainer = document.createElement("div");
+    setupRefreshContainer.classList.add("sf-tab-refresh-container");
+    const setupRefreshBtn = document.createElement("button");
+    setupRefreshBtn.textContent = "🔄 Refresh Setup Links";
+    setupRefreshBtn.classList.add("sf-tab-refresh-button");
+    setupRefreshBtn.addEventListener("click", async () => {
+      await bustLinksCache();
+      const isOnSetup = SETUP_PATH_REGEX.test(window.location.pathname);
+      if (isOnSetup) {
+        isExtracting = true;
+        updateButtonState();
+        // Send message to background to start extraction
+        let linksCache = await retrieveOrCreateLinksCache();
+        chrome.runtime.sendMessage({
+          action: "requestSetupLinkExtraction",
+          data: JSON.stringify(linksCache),
+        });
+      } else {
+        await openModal();
+      }
+    });
+    setupRefreshContainer.appendChild(setupRefreshBtn);
+    setupTabContent.appendChild(setupRefreshContainer);
+
     const objectsTabContent = document.createElement("div");
     objectsTabContent.classList.add("sf-tab-content");
     objectsTabContent.dataset.tab = "objects";
+
+    // Add refresh button for Object Manager tab
+    const objectsRefreshContainer = document.createElement("div");
+    objectsRefreshContainer.classList.add("sf-tab-refresh-container");
+    const objectsRefreshBtn = document.createElement("button");
+    objectsRefreshBtn.textContent = "🔄 Refresh Objects";
+    objectsRefreshBtn.classList.add("sf-tab-refresh-button");
+    objectsRefreshBtn.addEventListener("click", async () => {
+      await bustObjectsCache();
+      const isOnObjectManager = window.location.pathname.includes(
+        "/lightning/setup/ObjectManager",
+      );
+      if (isOnObjectManager) {
+        isExtracting = true;
+        updateButtonState();
+        const objectsCache = await extractObjectManagerObjects();
+        isExtracting = false;
+        updateButtonState();
+        const modal = document.getElementById(MODAL_ID);
+        if (modal) {
+          const searchInput = modal.querySelector(".sf-modal-search-input");
+          const objectsTabContent = modal.querySelector(
+            '.sf-tab-content[data-tab="objects"]',
+          );
+          renderObjectsCloud(objectsTabContent, objectsCache, searchInput.value);
+        }
+      } else {
+        await openModal();
+      }
+    });
+    objectsRefreshContainer.appendChild(objectsRefreshBtn);
+    objectsTabContent.appendChild(objectsRefreshContainer);
 
     const loginAsTabContent = document.createElement("div");
     loginAsTabContent.classList.add("sf-tab-content");
@@ -876,7 +941,12 @@ async function isPinned(href) {
   return pinnedLinks.includes(href);
 }
 async function renderTagCloud(containerElement, links, searchTerm = "") {
+  // Clear previous content but preserve the refresh button
+  const refreshContainer = containerElement.querySelector(".sf-tab-refresh-container");
   containerElement.innerHTML = ""; // Clear previous content
+  if (refreshContainer) {
+    containerElement.appendChild(refreshContainer);
+  }
 
   const tagCloudContainer = document.createElement("div");
   tagCloudContainer.classList.add("sf-tag-cloud-container");
@@ -943,7 +1013,12 @@ async function renderTagCloud(containerElement, links, searchTerm = "") {
 }
 
 async function renderObjectsCloud(containerElement, objects, searchTerm = "") {
+  // Clear previous content but preserve the refresh button
+  const refreshContainer = containerElement.querySelector(".sf-tab-refresh-container");
   containerElement.innerHTML = ""; // Clear previous content
+  if (refreshContainer) {
+    containerElement.appendChild(refreshContainer);
+  }
   let setupTab = document.querySelector(`.sf-tab-button[data-tab="setup"]`);
   if (setupTab) {
     // setupTab.style.display = "none"; // Hide setup tab
