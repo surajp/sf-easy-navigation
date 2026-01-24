@@ -1,8 +1,6 @@
 # Salesforce Easy Navigation Extension
 
-A Chrome extension that enhances Salesforce navigation by extracting and organizing setup menu links, managing Object Manager items, and providing quick access to admin features.
-
-_Note: This extension was built mainly for personal use, so it may not be fully polished, but it works well for me—feel free to use and modify it as needed. It only works in Chrome as of now._
+A Chrome & Firefox extension that enhances Salesforce navigation by extracting and organizing setup menu links, managing Object Manager items, and providing quick access to admin features.
 
 ## Motivation
 
@@ -162,6 +160,7 @@ The extension uses descriptive console logging with context. Check the browser c
 ## Browser Support
 
 Tested on Google Chrome (Extension Manifest V3).
+Tested on Firefox (Extension Manifest V3).
 
 ## License
 
