@@ -50,7 +50,9 @@ async function getSessionId() {
 async function executeSoqlQuery(soqlQuery) {
   const sessionId = await getSessionId();
   if (!sessionId) {
-    throw new Error("No session found. Please ensure you're logged into Salesforce.");
+    throw new Error(
+      "No session found. Please ensure you're logged into Salesforce.",
+    );
   }
   const apiUrl = `${getSalesforceApiOrigin()}/services/data/v${SALESFORCE_API_VERSION}/query?q=${encodeURIComponent(soqlQuery)}`;
   const response = await fetch(apiUrl, {
@@ -65,7 +67,9 @@ async function executeSoqlQuery(soqlQuery) {
       throw new Error("Session expired. Please refresh the page.");
     }
     if (response.status === 403) {
-      throw new Error("Permission denied. Ensure you have 'Manage Users' permissions.");
+      throw new Error(
+        "Permission denied. Ensure you have 'Manage Users' permissions.",
+      );
     }
     throw new Error(`API Error ${response.status}`);
   }
@@ -77,8 +81,11 @@ async function getOrgId() {
     return orgIdCache;
   }
   try {
-    const result = await executeSoqlQuery("SELECT Id FROM Organization LIMIT 1");
-    orgIdCache = result.records && result.records.length ? result.records[0].Id : null;
+    const result = await executeSoqlQuery(
+      "SELECT Id FROM Organization LIMIT 1",
+    );
+    orgIdCache =
+      result.records && result.records.length ? result.records[0].Id : null;
     return orgIdCache;
   } catch (error) {
     console.error("Error fetching org ID:", error);
@@ -93,9 +100,10 @@ async function searchUsers(searchTerm = "") {
   if (sanitizedTerm) {
     const likeTerm = `%${sanitizedTerm}%`;
     query += ` AND (Name LIKE '${likeTerm}' OR Email LIKE '${likeTerm}' OR Username LIKE '${likeTerm}')`;
+    query += " AND Type='Standard'";
     query += " ORDER BY Name ASC LIMIT 50";
   } else {
-    query += " ORDER BY LastLoginDate DESC NULLS LAST LIMIT 50";
+    query += " ORDER BY LastLoginDate DESC NULLS LAST LIMIT 5000";
   }
   try {
     return await executeSoqlQuery(query);
@@ -128,7 +136,8 @@ async function getLoginAsUrl(targetUserId) {
   if (!orgId) {
     throw new Error("Unable to determine org ID.");
   }
-  const currentPath = window.location.pathname + window.location.search + window.location.hash;
+  const currentPath =
+    window.location.pathname + window.location.search + window.location.hash;
   const encodedPath = encodeURIComponent(currentPath || "/");
   const baseUrl = getSalesforceApiOrigin();
   return `${baseUrl}/servlet/servlet.su?oid=${orgId}&suorgadminid=${targetUserId}&retURL=${encodedPath}&targetURL=${encodedPath}`;
