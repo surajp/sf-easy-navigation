@@ -26,14 +26,17 @@ function updateButtonState() {
   if (currentButton) {
     currentButton.disabled = isExtracting;
     if (isOnSetup) {
-      currentButton.textContent = isExtracting ? "⚙️ Extracting..." : "🏠 Go Home";
+      currentButton.textContent = isExtracting ? "⚙️" : "🏠";
+      currentButton.title = isExtracting ? "Extracting..." : "Go Home";
     } else {
-      currentButton.textContent = "⚙️ Go To Setup";
+      currentButton.textContent = "⚙️";
+      currentButton.title = "Go To Setup";
     }
   }
 }
 
 async function openModal() {
+  if (currentButton) currentButton.classList.remove("loading");
   clickCount = 0;
   if (isExtracting) {
     console.log("Extraction already in progress.");
@@ -76,6 +79,7 @@ function handleButtonHoverStart() {
   if (modalIsCurrentlyOpen()) {
     return;
   }
+  if (currentButton) currentButton.classList.add("loading");
   if (hoverTimer) {
     clearTimeout(hoverTimer);
   }
@@ -87,6 +91,7 @@ function handleButtonHoverStart() {
 }
 
 function handleButtonHoverEnd() {
+  if (currentButton) currentButton.classList.remove("loading");
   if (hoverTimer) {
     clearTimeout(hoverTimer);
     hoverTimer = null;
@@ -95,6 +100,7 @@ function handleButtonHoverEnd() {
 
 function handleButtonClick(event) {
   event.preventDefault();
+  if (currentButton) currentButton.classList.remove("loading");
   if (isExtracting) return;
   if (hoverTimer) {
     clearTimeout(hoverTimer);

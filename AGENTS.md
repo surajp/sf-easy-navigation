@@ -42,6 +42,13 @@ Z-index: 9999 for main button, 10000 for modals
 Responsive: Media queries at 768px breakpoint
 Branding: Use Salesforce blue (#0070d2) as primary color
 Prefixing: All custom CSS classes use sf- prefix to avoid conflicts
+Button Styling:
+- Main button is compact (32x32px) and icon-only ("🏠" or "⚙️").
+- Uses a loading animation (`.loading` class) with a vibrant orange-red conic gradient (`#ff4d00`, `#ffae00`) to indicate pending modal opening.
+- Tooltips (via `title` attribute) provide context ("Go Home", "Extracting...").
+Modal Styling:
+- Fixed height (`height: 80vh`) to prevent layout shifts during search.
+- Internal containers (`.sf-tab-content`, `.sf-tag-cloud-container`, etc.) use flexbox (`flex: 1`) and `overflow-y: auto` to fill available space and handle scrolling.
 
 ## Console Logging
 
@@ -66,7 +73,7 @@ Storage Keys: sf-setup-links-{domain}-links, -objects, -pinned-links, -pinned-ob
 
 The extension uses hover-based interactions to reduce clicks:
 
-- Hover over main button to open navigation modal (timings in `content/constants.js`)
+- Hover over main button triggers a loading animation (via `.loading` class) before opening navigation modal (timings in `content/constants.js`)
 - Hover over tab to switch tabs (timings in `content/constants.js`)
 - Clicking the button still navigates between Home and Setup
 - Clicking the button cancels the hover timer and navigates immediately

@@ -19,5 +19,5 @@ const USER_CACHE_EXPIRY_DAYS = 30;
 const BUTTON_CLICK_DELAY_MS = 300;
 
 // --- Hover Configuration ---
-const BUTTON_HOVER_DELAY_MS = 300;
-const TAB_HOVER_DELAY_MS = 10;
+const BUTTON_HOVER_DELAY_MS = 1000;
+const TAB_HOVER_DELAY_MS = 50;
