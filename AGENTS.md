@@ -4,11 +4,11 @@ This file provides guidance for AI agents working on the sf-gohome-extn Chrome e
 
 ## Build and Test Commands
 
-This project has no build, lint, or test infrastructure configured. The package.json only contains a placeholder test command.
+There is no bundler, lint, or test infrastructure. `./build.sh` (also `npm run build`) copies the source into `dist/chrome` and `dist/firefox` with a per-browser manifest (Chrome: `background.service_worker` only; Firefox: `background.scripts` only plus the gecko add-on ID), checks that every manifest-referenced file exists, and runs `node --check` on every script. When adding a top-level source file or folder, add it to `SOURCE_FILES` in `build.sh`.
 
 To manually test the extension:
 
-1. Load the extension in Chrome (chrome://extensions -> Developer mode -> Load unpacked)
+1. Load the extension in Chrome (chrome://extensions -> Developer mode -> Load unpacked; the repo root or `dist/chrome`), or in Firefox via about:debugging using `dist/firefox/manifest.json`
 2. Navigate to a Salesforce instance (_://_.lightning.force.com/\*)
 3. Verify functionality manually
 

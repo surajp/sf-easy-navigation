@@ -107,6 +107,7 @@ sf-gohome-extn/
 │   ├── extraction.js     # Async setup link crawling
 │   └── init.js           # Bootstrapping + listeners
 ├── background.js         # Service worker for session cookie lookup
+├── build.sh              # Builds dist/chrome and dist/firefox
 ├── styles.css            # Button styling
 ├── modal.css             # Modal UI styling
 ├── AGENTS.md             # Development guidelines
@@ -147,6 +148,15 @@ Adjust hover interaction timings inside `content/constants.js`:
 3. Reload the extension on `chrome://extensions/`
 4. Test on a Salesforce instance
 
+### Building for Chrome and Firefox
+
+Run `./build.sh` (or `npm run build`; needs Node.js). It writes two loadable copies to `dist/` (gitignored):
+
+- `dist/chrome`: the manifest declares only `background.service_worker`, so Chrome shows no warning. Load it from `chrome://extensions/` with **Load unpacked**.
+- `dist/firefox`: the manifest declares only `background.scripts` and adds the `browser_specific_settings.gecko` add-on ID (Firefox 128+). Load it from `about:debugging#/runtime/this-firefox` with **Load Temporary Add-on…** and pick `dist/firefox/manifest.json`. If the button doesn't appear, allow the Salesforce sites under the add-on's **Permissions** in `about:addons`.
+
+The build copies the source files, rewrites the manifest per browser, fails if the manifest points at a missing file, and syntax-checks every script. Rerun it after each change.
+
 ### Console Logging
 
 The extension uses descriptive console logging with context. Check the browser console when troubleshooting:
@@ -167,7 +177,7 @@ The extension uses descriptive console logging with context. Check the browser c
 Tested on Google Chrome (Extension Manifest V3).
 Tested on Firefox (Extension Manifest V3).
 
-**Note:** Chrome shows the warning `'background.scripts' requires manifest version of 2 or lower` when loading the extension. This is expected and harmless. `manifest.json` declares both `background.service_worker` (used by Chrome) and `background.scripts` (used by Firefox, which doesn't support MV3 service workers), and each browser ignores the key it doesn't use. Don't remove `background.scripts`, or Firefox support will break.
+**Note:** Chrome shows the warning `'background.scripts' requires manifest version of 2 or lower` when loading the extension. This is expected and harmless. `manifest.json` declares both `background.service_worker` (used by Chrome) and `background.scripts` (used by Firefox, which doesn't support MV3 service workers), and each browser ignores the key it doesn't use. Don't remove `background.scripts`, or Firefox support will break. To avoid the warning, load `dist/chrome` from `./build.sh` instead.
 
 ## License
 

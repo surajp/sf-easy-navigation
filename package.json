@@ -15,5 +15,8 @@
   "repository": {
     "type": "git",
     "url": "https://github.com/surajp/sf-easy-navigation.git"
+  },
+  "scripts": {
+    "build": "./build.sh"
   }
 }
