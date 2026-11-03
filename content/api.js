@@ -107,7 +107,12 @@ async function getOrgId() {
 
 async function searchUsers(searchTerm = "") {
   const fields = "Id, Name, Email, Username, LastLoginDate, IsActive";
-  const sanitizedTerm = searchTerm.trim().replace(/'/g, "\\'");
+  // Escape backslashes first, then quotes and LIKE wildcards, so input can't break out of the string
+  const sanitizedTerm = searchTerm
+    .trim()
+    .replace(/\\/g, "\\\\")
+    .replace(/'/g, "\\'")
+    .replace(/[%_]/g, "\\$&");
   let query = `SELECT ${fields} FROM User WHERE IsActive = true AND UserType = 'Standard'`;
   if (sanitizedTerm) {
     const likeTerm = `%${sanitizedTerm}%`;
@@ -121,21 +126,6 @@ async function searchUsers(searchTerm = "") {
   } catch (error) {
     console.error("Error searching users:", error);
     throw error;
-  }
-}
-
-async function getUsersByIds(userIds) {
-  if (!userIds || userIds.length === 0) {
-    return { records: [] };
-  }
-  const fields = "Id, Name, Email, Username, LastLoginDate, IsActive";
-  const idsClause = userIds.map((id) => `'${id}'`).join(",");
-  const query = `SELECT ${fields} FROM User WHERE Id IN (${idsClause}) AND IsActive = true`;
-  try {
-    return await executeSoqlQuery(query);
-  } catch (error) {
-    console.error("Error fetching users by IDs:", error);
-    return { records: [] };
   }
 }
 

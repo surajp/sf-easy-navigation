@@ -1,4 +1,11 @@
 /********* content/renderers.js **************/
+function navigateFromModal(event, href) {
+  event.preventDefault();
+  window.location.href = href;
+  const modal = document.getElementById(MODAL_ID);
+  if (modal) cleanupModal(modal);
+}
+
 async function renderTagCloud(containerElement, links, searchTerm = "") {
   const refreshContainer = containerElement.querySelector(".sf-tab-refresh-container");
   containerElement.innerHTML = "";
@@ -21,28 +28,21 @@ async function renderTagCloud(containerElement, links, searchTerm = "") {
       value.label.toLowerCase().includes(searchTerm.toLowerCase()) ||
       value.parentLabel?.toLowerCase().includes(searchTerm.toLowerCase())
     ) {
+      const isLinkPinned = _pinnedLinks.includes(value.href);
       const div = document.createElement("div");
       div.classList.add("sf-tag-cloud-item");
-      div.classList.add((await isPinned(value.href)) ? "pinned" : "unpinned");
+      div.classList.add(isLinkPinned ? "pinned" : "unpinned");
       const link = document.createElement("a");
       link.href = value.href;
       link.textContent = value.label;
       link.title = value.parentLabel || "";
       link.classList.add("sf-tag-cloud-tag");
-      link.onclick = (e) => {
-        e.preventDefault();
-        window.location.href = link.href;
-        const modal = document.getElementById(MODAL_ID);
-        if (modal) cleanupModal(modal);
-        return false;
-      };
+      link.addEventListener("click", (e) => navigateFromModal(e, link.href));
       div.appendChild(link);
       const pinBtn = document.createElement("button");
-      pinBtn.textContent = (await isPinned(value.href)) ? "📍" : "📌";
+      pinBtn.textContent = isLinkPinned ? "📍" : "📌";
       pinBtn.classList.add("sf-tag-cloud-pin-button");
-      pinBtn.onclick = () => {
-        togglePin(value.href);
-      };
+      pinBtn.addEventListener("click", () => togglePin(value.href));
       div.appendChild(pinBtn);
       const parentLabel = document.createElement("span");
       parentLabel.textContent = value.parentLabel;
@@ -57,7 +57,8 @@ async function renderTagCloud(containerElement, links, searchTerm = "") {
     tagCloudContainer.appendChild(noResults);
   } else if (Object.keys(links).length === 0 && !searchTerm) {
     const noResults = document.createElement("p");
-    noResults.textContent = "No links found yet. Extraction might be needed (triple-click button).";
+    noResults.textContent =
+      "No setup links cached yet. Go to Setup and hover the button to open this panel; links are extracted automatically.";
     tagCloudContainer.appendChild(noResults);
   }
 }
@@ -76,7 +77,7 @@ async function renderObjectsCloud(containerElement, objects, searchTerm = "") {
     const extractMessage = document.createElement("div");
     extractMessage.classList.add("sf-empty-message");
     extractMessage.textContent =
-      "No objects found. Navigate to Object Manager and double-click the button to extract objects.";
+      "No objects cached yet. Go to Object Manager and hover the button to open this panel; objects are extracted automatically.";
     objectsContainer.appendChild(extractMessage);
     return;
   }
@@ -98,19 +99,13 @@ async function renderObjectsCloud(containerElement, objects, searchTerm = "") {
       link.href = value.href;
       link.textContent = value.label;
       link.classList.add("sf-object-link");
-      link.onclick = (e) => {
-        e.preventDefault();
-        window.location.href = link.href;
-        const modal = document.getElementById(MODAL_ID);
-        if (modal) cleanupModal(modal);
-        return false;
-      };
+      link.addEventListener("click", (e) => navigateFromModal(e, link.href));
       mainRow.appendChild(link);
 
       const pinBtn = document.createElement("button");
       pinBtn.textContent = _pinnedObjects.includes(value.href) ? "📍" : "📌";
       pinBtn.classList.add("sf-object-pin-button");
-      pinBtn.onclick = () => toggleObjectPin(value.href);
+      pinBtn.addEventListener("click", () => toggleObjectPin(value.href));
       mainRow.appendChild(pinBtn);
 
       div.appendChild(mainRow);
@@ -141,12 +136,7 @@ async function renderObjectsCloud(containerElement, objects, searchTerm = "") {
         quickLinkElement.href = constructedUrl;
         quickLinkElement.textContent = quickLink.label;
         quickLinkElement.classList.add("sf-quick-link");
-        quickLinkElement.onclick = (e) => {
-          e.preventDefault();
-          window.location.href = quickLinkElement.href;
-          const modal = document.getElementById(MODAL_ID);
-          if (modal) cleanupModal(modal);
-        };
+        quickLinkElement.addEventListener("click", (e) => navigateFromModal(e, quickLinkElement.href));
         quickLinksRow.appendChild(quickLinkElement);
       });
 

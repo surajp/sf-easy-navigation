@@ -1,4 +1,11 @@
 /********* content/extraction.js **************/
+async function startSetupLinkExtraction() {
+  isExtracting = true;
+  updateButtonState();
+  const linksCache = await retrieveOrCreateLinksCache();
+  await performAsyncTaskExtraction(linksCache);
+}
+
 async function performAsyncTaskExtraction(initialLinksCache) {
   console.log("Starting asynchronous link extraction...");
   let linksCache = { ...initialLinksCache };

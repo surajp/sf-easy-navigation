@@ -8,29 +8,23 @@ function showLoadingIndicator(containerElement) {
   containerElement.appendChild(loadingWrapper);
 }
 
+function showLoginAsError(containerElement, message) {
+  if (!containerElement) return;
+  let errorElement = containerElement.querySelector(".sf-error-message");
+  if (!errorElement) {
+    errorElement = document.createElement("p");
+    errorElement.classList.add("sf-error-message");
+    containerElement.prepend(errorElement);
+  }
+  errorElement.textContent = message;
+}
+
 async function fetchAndRenderLoginAsUsers(searchTerm, containerElement, tabContent, forceRefresh = false) {
   if (!containerElement) return;
   showLoadingIndicator(containerElement);
   try {
-    let users;
     const shouldRefresh = forceRefresh || (await shouldRefreshUsersCache());
-    if (shouldRefresh) {
-      const apiResult = await searchUsers("");
-      const usersCache = {
-        records: apiResult.records.map((user) => ({
-          Id: user.Id,
-          Name: user.Name,
-          Email: user.Email,
-          Username: user.Username,
-          LastLoginDate: user.LastLoginDate,
-          IsActive: user.IsActive,
-        })),
-      };
-      await saveUsersCache(usersCache, true);
-      users = usersCache;
-    } else {
-      users = await retrieveOrCreateUsersCache();
-    }
+    const users = shouldRefresh ? await refreshUsersCache() : await retrieveOrCreateUsersCache();
     if (searchTerm) {
       const sanitizedTerm = searchTerm.trim().toLowerCase();
       users.records = users.records.filter(
@@ -40,18 +34,7 @@ async function fetchAndRenderLoginAsUsers(searchTerm, containerElement, tabConte
           (user.Email && user.Email.toLowerCase().includes(sanitizedTerm)),
       );
     }
-    if (!searchTerm) {
-      const recentUsersList = await retrieveOrCreateRecentUsersCache();
-      if (recentUsersList && recentUsersList.length > 0) {
-        const recentUsersFromCache = users.records.filter((u) => recentUsersList.includes(u.Id));
-        const recentIdsSet = new Set(recentUsersFromCache.map((u) => u.Id));
-        const filteredRegularUsers = users.records.filter((u) => !recentIdsSet.has(u.Id));
-        const recentUsersSorted = recentUsersFromCache.sort((a, b) => {
-          return recentUsersList.indexOf(a.Id) - recentUsersList.indexOf(b.Id);
-        });
-        users.records = [...recentUsersSorted, ...filteredRegularUsers];
-      }
-    }
+    // renderUserResults handles ordering (recent logins first, then by name)
     await renderUserResults(containerElement, users, searchTerm);
     if (!searchTerm && tabContent) {
       tabContent.dataset.loaded = "true";
@@ -138,7 +121,7 @@ async function renderUserResults(containerElement, users, searchTerm = "") {
         if (modal) cleanupModal(modal);
       } catch (error) {
         console.error("Error logging in as user:", error);
-        alert("Failed to login as user: " + error.message);
+        showLoginAsError(containerElement, `Failed to login as user: ${error.message}`);
       }
     };
 

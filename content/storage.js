@@ -165,16 +165,6 @@ async function shouldRefreshCache() {
   return isCacheStale(lastUpdated);
 }
 
-function bustCaches() {
-  const linksKey = KEY_BASE + "-links";
-  const objectsKey = KEY_BASE + "-objects";
-  const usersKey = KEY_BASE + "-users";
-  const linksTsKey = KEY_BASE + "-updated";
-  const objectsTsKey = KEY_BASE + "-objects-updated";
-  const usersTsKey = KEY_BASE + "-users-updated";
-  chrome.storage.local.remove([linksKey, linksTsKey, objectsKey, objectsTsKey, usersKey, usersTsKey]);
-}
-
 async function bustLinksCache() {
   const linksKey = KEY_BASE + "-links";
   const linksTsKey = KEY_BASE + "-updated";
@@ -187,20 +177,28 @@ async function bustObjectsCache() {
   await chrome.storage.local.remove([objectsKey, objectsTsKey]);
 }
 
+async function readPinnedList(key) {
+  const storedValue = (await chrome.storage.local.get([key]))[key];
+  if (!storedValue) return [];
+  try {
+    const parsed = JSON.parse(storedValue);
+    return Array.isArray(parsed) ? parsed : [];
+  } catch (e) {
+    console.error(`Error parsing pinned list from storage key ${key}`, e);
+    return [];
+  }
+}
+
 async function getPinnedLinks() {
-  const key = KEY_BASE + "-pinned-links";
   if (!_pinnedLinks.length) {
-    const pinnedLinks = (await chrome.storage.local.get([key]))[key];
-    _pinnedLinks = pinnedLinks ? JSON.parse(pinnedLinks) : [];
+    _pinnedLinks = await readPinnedList(KEY_BASE + "-pinned-links");
   }
   return _pinnedLinks;
 }
 
 async function getPinnedObjects() {
-  const key = KEY_BASE + "-pinned-objects";
   if (!_pinnedObjects.length) {
-    const pinnedObjects = (await chrome.storage.local.get([key]))[key];
-    _pinnedObjects = pinnedObjects ? JSON.parse(pinnedObjects) : [];
+    _pinnedObjects = await readPinnedList(KEY_BASE + "-pinned-objects");
   }
   return _pinnedObjects;
 }
@@ -243,9 +241,4 @@ async function togglePin(href) {
     const setupTabContent = modal.querySelector('.sf-tab-content[data-tab="setup"]');
     renderTagCloud(setupTabContent, linksCache, searchInput.value);
   }
-}
-
-async function isPinned(href) {
-  const pinnedLinks = await getPinnedLinks();
-  return pinnedLinks.includes(href);
 }

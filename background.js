@@ -10,19 +10,6 @@ function getSalesforceDomainFromUrl(tabUrl) {
 }
 
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
-  if (request.action === "requestSetupLinkExtraction") {
-    console.log(
-      "Background: Received request to start link extraction from tab",
-      sender.tab.id,
-    );
-    // Simply tell the content script to begin its own asynchronous process
-    chrome.tabs.sendMessage(sender.tab.id, {
-      action: "beginAsyncLinkExtraction",
-      data: request.data,
-    });
-    return;
-  }
-
   if (request.action === "getSessionCookie") {
     let targetUrl;
     try {
@@ -55,7 +42,6 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     );
     return true;
   }
-  // Keep other message listeners if needed
 });
 
 /******************* end of background.js *****************/

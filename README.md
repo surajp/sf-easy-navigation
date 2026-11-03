@@ -8,8 +8,8 @@ I built this mainly because I found navigating to the setup tab and back quite t
 
 ## Features
 
-- **Quick Navigation**: Single-click button to navigate between Setup and Home pages. Hover over button for 0.5 seconds to open the navigation modal.
-- **Hover-Based Interactions**: Hover over tabs for 150ms to switch between them, reducing clicks and improving efficiency
+- **Quick Navigation**: Single-click button to navigate between Setup and Home pages. Hover over button for 1 second to open the navigation modal.
+- **Hover-Based Interactions**: Hover over tabs for 50ms to switch between them, reducing clicks and improving efficiency
 - **Setup Links Tab**: Browse all Salesforce setup menu items organized alphabetically with search and filtering
 - **Object Manager Tab**: Access all Salesforce objects with quick search and navigation
 - **Object Quick Links**: Direct access to Fields, Validation Rules, Page Layouts, Record Types, Lightning Pages, Buttons & Actions, Field Sets, and Compact Layouts for each object
@@ -34,22 +34,21 @@ I built this mainly because I found navigating to the setup tab and back quite t
 | Action            | Description                                          |
 | ----------------- | ---------------------------------------------------- |
 | **Single Click**  | Navigate to Home (if on Setup) or Setup (if on Home) |
-| **Hover (500ms)** | Open the navigation modal                            |
-| **Triple Click**  | Extract and cache all setup links                    |
+| **Hover (1s)**    | Open the navigation modal                            |
 | **Ctrl+Click**    | Open navigation target in a new tab                  |
 
 ### Hover-Based Tab Switching
 
-Once the navigation modal is open, simply hover over any tab for 150ms to switch to it. This reduces the number of clicks needed to access different features. Clicking tabs still works for immediate switching.
+Once the navigation modal is open, simply hover over any tab for 50ms to switch to it. This reduces the number of clicks needed to access different features. Clicking tabs still works for immediate switching.
 
 ### Initial Extraction
 
-When you login to an org for the first time after installing the extension, it has to first extract and cache all setup links and object links.
-To cache setup links, navigate to the Setup page and either double-click or triple-click extension button. Wait for a minute approximately for the extraction to complete without navigating away from the page with the tab in focus.
-To cache object links, navigate to the Object Manager page and either double-click or triple-click extension button. Wait till the page stops scrolling automatically.
-The cached links expire in 60 days now, its hardcoded, you can easily edit the code to change the expiry duration.
+When you login to an org for the first time after installing the extension, it has to first extract and cache all setup links and object links. Extraction starts automatically when you open the modal (hover the button) on the right page and the cache is empty or expired:
 
-**Note**: Hover-based modal opening works for navigation only. For extraction, use double/triple-click as described above.
+- **Setup links**: Go to any Setup page and hover the button. The extension expands the Setup menu tree and collects every link. This takes about a minute; stay on the page with the tab in focus until the "Extracting more links..." indicator disappears.
+- **Objects**: Go to Object Manager and hover the button. The object list scrolls automatically; wait until it stops.
+
+To re-extract at any time, use the **🔄 Refresh** button on the relevant tab while on the matching page. Cached links and objects expire after 60 days (`CACHE_EXPIRY_DAYS` in `content/constants.js`).
 
 ### Navigation Modal Tabs
 
@@ -69,8 +68,6 @@ Click the pin icon (📌) next to any link or object to pin it. Pinned items app
 
 This extension requires the following permissions:
 
-- **activeTab**: Access the current tab's URL and content
-- **scripting**: Execute content scripts
 - **storage**: Store cached links and user preferences locally
 - **cookies**: Retrieve Salesforce session ID for API calls
 
@@ -99,7 +96,7 @@ sf-gohome-extn/
 │   ├── button.js         # Floating button orchestration
 │   ├── extraction.js     # Async setup link crawling
 │   └── init.js           # Bootstrapping + listeners
-├── background.js         # Service worker for message passing
+├── background.js         # Service worker for session cookie lookup
 ├── styles.css            # Button styling
 ├── modal.css             # Modal UI styling
 ├── AGENTS.md             # Development guidelines
@@ -111,7 +108,7 @@ sf-gohome-extn/
 ### Key Components
 
 - **content/**: Modular content scripts that handle DOM manipulation, link extraction, modal UI, object quick links, login-as flows, and all user-facing features
-- **background.js**: Service worker that handles message passing and session cookie retrieval
+- **background.js**: Service worker that retrieves the Salesforce session cookie for REST calls (content scripts can't read cookies directly)
 - **Chrome Storage**: Used for caching extracted links, objects, and pinned items per domain
 
 ### Storage Keys
@@ -132,8 +129,8 @@ sf-gohome-extn/
 
 Adjust hover interaction timings inside `content/constants.js`:
 
-- `BUTTON_HOVER_DELAY_MS` (default: 300ms): Time to hover over button before opening modal
-- `TAB_HOVER_DELAY_MS` (default: 10ms): Time to hover over tab before switching
+- `BUTTON_HOVER_DELAY_MS` (default: 1000ms): Time to hover over button before opening modal
+- `TAB_HOVER_DELAY_MS` (default: 50ms): Time to hover over tab before switching
 
 ### Running in Development
 
@@ -155,7 +152,7 @@ The extension uses descriptive console logging with context. Check the browser c
 - Setup links cache expires after 60 days
 - Objects cache expires after 60 days
 - Users cache expires after 30 days
-- Double-click the button while on the appropriate page to force refresh
+- Use the **🔄 Refresh** button on each tab to force a refresh (setup links and objects must be refreshed from Setup and Object Manager respectively)
 
 ## Browser Support
 

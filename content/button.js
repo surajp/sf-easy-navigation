@@ -9,15 +9,14 @@ function createButton() {
 function updateButtonState() {
   const isOnSetup = SETUP_PATH_REGEX.test(window.location.pathname);
   if (!currentButton) {
-    currentButton = document.getElementById(BUTTON_ID);
-    if (!currentButton) {
-      currentButton = createButton();
-      document.body.appendChild(currentButton);
-      console.log("Salesforce Go Home/Setup Extension: Button added.");
-      buttonEventListenersAttached = false;
-    }
+    currentButton = document.getElementById(BUTTON_ID) || createButton();
   }
-  if (currentButton && !buttonEventListenersAttached) {
+  // Salesforce can replace page content; re-append the same element so its listeners survive
+  if (!currentButton.isConnected) {
+    document.body.appendChild(currentButton);
+    console.log("Salesforce Go Home/Setup Extension: Button added.");
+  }
+  if (!buttonEventListenersAttached) {
     currentButton.addEventListener("click", handleButtonClick);
     currentButton.addEventListener("mouseenter", handleButtonHoverStart);
     currentButton.addEventListener("mouseleave", handleButtonHoverEnd);
@@ -37,42 +36,26 @@ function updateButtonState() {
 
 async function openModal() {
   if (currentButton) currentButton.classList.remove("loading");
-  clickCount = 0;
   if (isExtracting) {
     console.log("Extraction already in progress.");
     return;
   }
   const isOnSetup = SETUP_PATH_REGEX.test(window.location.pathname);
   const isOnObjectManager = window.location.pathname.includes("/lightning/setup/ObjectManager");
-  if (isOnSetup) {
-    updateButtonState();
+  if (isOnObjectManager) {
+    // Show cached objects while the table auto-scrolls
     displaySetupTagCloud();
-    if (isOnObjectManager) {
-      let objectsCache = await retrieveOrCreateObjectsCache();
-      if (await shouldRefreshObjectsCache()) {
-        isExtracting = true;
-        objectsCache = await extractObjectManagerObjects();
-        isExtracting = false;
-      }
-    } else {
-      let linksCache = await retrieveOrCreateLinksCache();
-      if (await shouldRefreshCache()) {
-        isExtracting = true;
-        chrome.runtime.sendMessage({
-          action: "requestSetupLinkExtraction",
-          data: JSON.stringify(linksCache),
-        });
-      }
-    }
-  } else {
-    let linksCache = await retrieveOrCreateLinksCache();
-    if (Object.keys(linksCache).length === 0) {
-      console.log("No links found, extraction might be needed.");
-      return;
+    if (await shouldRefreshObjectsCache()) {
+      await extractObjectManagerObjects();
     }
   }
+  // Always open, even with empty caches: the empty states explain how to populate them,
+  // and the Login As tab and record navigation work anywhere
   updateButtonState();
-  displaySetupTagCloud();
+  await displaySetupTagCloud();
+  if (isOnSetup && !isOnObjectManager && (await shouldRefreshCache())) {
+    await startSetupLinkExtraction();
+  }
 }
 
 function handleButtonHoverStart() {
@@ -111,7 +94,6 @@ function handleButtonClick(event) {
 }
 
 function navigateToHome(isCtrlPressed) {
-  clickCount = 0;
   const isOnSetup = SETUP_PATH_REGEX.test(window.location.pathname);
   const urlToNavigate = `${window.location.origin}${isOnSetup ? HOME_PATH : SETUP_HOME_PATH}`;
   if (isCtrlPressed) {

@@ -22,9 +22,9 @@ Modular layout: `manifest.json` (Chrome Extension V3 config), `background.js` (s
 
 ## Naming Conventions
 
-Constants: `UPPER_SNAKE_CASE` (BUTTON*ID, MODAL_ID, SETUP_PATH_REGEX, BUTTON_HOVER_DELAY_MS, TAB_HOVER_DELAY_MS, BUTTON_CLICK_DELAY_MS, SALESFORCE_API_VERSION, CACHE_EXPIRY_DAYS, USER_CACHE_EXPIRY_DAYS)
-Functions: `camelCase` (createButton, handleDoubleClick, updateButtonState, handleButtonHoverStart, handleTabHoverStart, cleanupModal)
-Variables: `camelCase` (currentButton, clickCount, hoverTimer, tabHoverTimer, searchDebounceTimer), prefix private vars with `*`(_pinnedLinks, _pinnedObjects, _recentUsers)
+Constants: `UPPER_SNAKE_CASE` (BUTTON*ID, MODAL_ID, SETUP_PATH_REGEX, BUTTON_HOVER_DELAY_MS, TAB_HOVER_DELAY_MS, SALESFORCE_API_VERSION, CACHE_EXPIRY_DAYS, USER_CACHE_EXPIRY_DAYS)
+Functions: `camelCase` (createButton, handleButtonClick, updateButtonState, handleButtonHoverStart, handleTabHoverStart, cleanupModal)
+Variables: `camelCase` (currentButton, hoverTimer, tabHoverTimer, searchDebounceTimer), prefix private vars with `*`(_pinnedLinks, _pinnedObjects, _recentUsers)
 CSS classes:`sf-\*` prefix with kebab-case (.sf-go-home-setup-button, .sf-setup-tag-cloud-modal)
 
 ## JavaScript Patterns
@@ -66,7 +66,7 @@ Scrolling: Detect completion by comparing scroll positions, use delays for DOM u
 ## Extension Architecture
 
 Content Scripts (`content/*.js`): DOM interaction, link extraction/caching, modal UI, object quick links, and all user-facing logic (including Login As User tab)
-Background Script (background.js): Message passing, cookie/session retrieval for Login As feature
+Background Script (background.js): Cookie/session retrieval for REST calls (Login As feature); setup link extraction runs entirely in the content script
 Storage Keys: sf-setup-links-{domain}-links, -objects, -pinned-links, -pinned-objects, -updated, -objects-updated, -users, -users-updated, -recent-users
 
 ## Hover Configuration
@@ -91,7 +91,7 @@ When adding or modifying event listeners and timers:
 
 ## Login As User Feature
 
-- Modal now has a third tab titled **"Login As User"** that lets admins search active users (debounced input, 50 results sorted by last login or name)
+- Modal now has a third tab titled **"Login As User"** that lets admins search active standard users (all users are fetched once via paginated SOQL and cached; the debounced search filters the cache client-side; recent logins first, then by name)
 - Content script retrieves Salesforce data via REST (`/services/data/vXX/query`) using the browser session ID
 - Session ID is obtained by messaging `background.js`, which calls `chrome.cookies.get({ url: https://<my.salesforce.com domain>, name: "sid" })`
 - Background derives the correct My Domain via `getSalesforceDomainFromUrl` (handles `lightning.force.com` → `my.salesforce.com` and setup domains)

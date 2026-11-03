@@ -114,13 +114,7 @@ async function displaySetupTagCloud(searchTerm = "", isLoading = false) {
       await bustLinksCache();
       const isOnSetup = SETUP_PATH_REGEX.test(window.location.pathname);
       if (isOnSetup) {
-        isExtracting = true;
-        updateButtonState();
-        let linksCache = await retrieveOrCreateLinksCache();
-        chrome.runtime.sendMessage({
-          action: "requestSetupLinkExtraction",
-          data: JSON.stringify(linksCache),
-        });
+        await startSetupLinkExtraction();
       } else {
         await openModal();
       }
@@ -141,11 +135,7 @@ async function displaySetupTagCloud(searchTerm = "", isLoading = false) {
       await bustObjectsCache();
       const isOnObjectManager = window.location.pathname.includes("/lightning/setup/ObjectManager");
       if (isOnObjectManager) {
-        isExtracting = true;
-        updateButtonState();
         const objectsCache = await extractObjectManagerObjects();
-        isExtracting = false;
-        updateButtonState();
         const modalRef = document.getElementById(MODAL_ID);
         if (modalRef) {
           const searchInputRef = modalRef.querySelector(".sf-modal-search-input");

@@ -3,7 +3,7 @@
   "name": "Easy Salesforce Navigation",
   "version": "1.0",
   "description": "Adds a floating button to Salesforce pages for easier navigation.",
-  "permissions": ["activeTab", "scripting", "storage", "cookies"],
+  "permissions": ["storage", "cookies"],
   "host_permissions": [
     "*://*.lightning.force.com/*",
     "*://*.my.salesforce.com/*",

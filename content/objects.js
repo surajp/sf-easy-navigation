@@ -27,6 +27,9 @@ async function extractObjectManagerObjects() {
       scroller.scrollBy(0, window.innerHeight);
       await delay(1000);
     }
+    // Rebuild from scratch, keyed by href: labels aren't unique (e.g. a custom object and a
+    // managed-package object can share one), and old label-keyed entries would duplicate
+    const extractedObjects = {};
     const objectRows = objectTable.querySelectorAll("tbody tr");
     objectRows.forEach((row) => {
       const linkElement = row.querySelector("th a");
@@ -34,13 +37,14 @@ async function extractObjectManagerObjects() {
       const label = linkElement.textContent.trim();
       const href = linkElement.href;
       if (label && href) {
-        const key = label;
-        objectsCache[key] = {
-          label,
-          href,
-        };
+        extractedObjects[href] = { label, href };
       }
     });
+    if (Object.keys(extractedObjects).length === 0) {
+      console.warn("No objects found in Object Manager table; keeping existing cache");
+      return objectsCache;
+    }
+    objectsCache = extractedObjects;
     await saveObjectsCache(objectsCache, true);
     console.log(`Extracted ${Object.keys(objectsCache).length} objects from Object Manager`);
     return objectsCache;

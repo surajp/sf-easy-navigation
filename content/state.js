@@ -3,8 +3,6 @@ let sessionIdCache = null;
 let orgIdCache = null;
 let currentButton;
 let buttonEventListenersAttached = false;
-let clickCount = 0;
-let clickTimer;
 let hoverTimer = null;
 let tabHoverTimer = null;
 let searchDebounceTimer = null;
