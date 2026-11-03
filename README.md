@@ -62,7 +62,7 @@ To re-extract at any time, use the **🔄 Refresh** button on the relevant tab w
    - Fields are fetched live (one query per object, about 150ms) and kept only in memory while the modal is open; nothing is stored
 3. **Login As User**: Search active users by name, email, or username to login as them. Users are queried live from Salesforce on every search and never stored in the browser; with an empty search, the tab shows users you recently logged in as, then the most recently active users
 
-4. **Metadata**: Click a type chip, then type in the search box. Each search runs one live query for the selected type (up to 50 results, ranked exact, prefix, then contains) and nothing is cached. Results open the item's setup page; Flows open the flow's detail page listing all versions
+4. **Metadata**: Click a type chip, then type in the search box. Each search runs one live query for the selected type (up to 50 results, ranked exact, prefix, then contains) and nothing is cached. Results open the item's setup page; Flows open the flow's detail page listing all versions. For validation rules, type `Object.rule` (e.g. `Account.status`, or `Account.` for all of an object's rules) to search one object's rules; the object is matched the same way as in field search
 
 ### Record ID Navigation
 

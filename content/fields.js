@@ -59,9 +59,14 @@ function resolveObjectForFieldSearch(objects, objectTerm) {
   return { object: null, suggestions };
 }
 
+// EntityDefinitionId values are API names (standard) or 15-character 01I... IDs (custom);
+// Object Manager URLs may carry the 18-character form
+function toEntityDefinitionId(objectSegment) {
+  return /^01I[A-Za-z0-9]{15}$/.test(objectSegment) ? objectSegment.slice(0, 15) : objectSegment;
+}
+
 async function fetchObjectFields(objectSegment, signal) {
-  // FieldDefinition stores custom object IDs in 15-character form
-  const entityId = /^01I[A-Za-z0-9]{15}$/.test(objectSegment) ? objectSegment.slice(0, 15) : objectSegment;
+  const entityId = toEntityDefinitionId(objectSegment);
   const result = await executeSoqlQuery(
     `SELECT QualifiedApiName, Label, DurableId, DataType FROM FieldDefinition WHERE EntityDefinitionId = '${entityId}'`,
     signal,

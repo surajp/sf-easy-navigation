@@ -139,6 +139,7 @@ content/ (main logic), modal.css (UI/responsive), manifest.json (permissions/con
 - `FlowDefinitionView` and `EntityDefinition` reject `OR`, so Flows and Custom Metadata Types search their label only
 - `PermissionSet` queries fail on an escaped apostrophe, so that type swaps `\'` for the `_` wildcard (`apostropheAsWildcard`)
 - Flows link to the FlowDefinition detail page (all versions), not Flow Builder
+- Types with `objectFilterField` (currently Validation Rules) accept `Object.name`: `resolveMetadataObjectScope` resolves the object from the objects cache via the field-search helpers (`parseFieldSearchTerm`, `resolveObjectForFieldSearch`, `toEntityDefinitionId`) and adds `<objectFilterField> = '<entity id>'` to the query; unclear objects show the same suggestion buttons
 - In-flight searches are aborted via `metadataSearchAbortController` on a newer search or `cleanupModal`
 - Use `escapeSoqlLikeTerm` (api.js) for any user text in SOQL LIKE clauses, and `scoreNameMatch` (fields.js) for client-side ranking
 

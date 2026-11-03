@@ -217,6 +217,8 @@ const METADATA_TYPES = [
     fields: "Id, ValidationName, Active, EntityDefinitionId, EntityDefinition.QualifiedApiName",
     searchFields: ["ValidationName"],
     orderBy: "ValidationName",
+    // "Object.rule" scopes the search to one object, resolved like field search
+    objectFilterField: "EntityDefinitionId",
     // EntityDefinitionId is the object's Object Manager URL segment (API name or 01I... ID)
     toResult: (record) => ({
       name: record.ValidationName,
@@ -231,8 +233,8 @@ function getSelectedMetadataType() {
   return METADATA_TYPES.find((type) => type.key === selectedMetadataTypeKey) || METADATA_TYPES[0];
 }
 
-function buildMetadataQuery(metadataType, searchTerm) {
-  const conditions = [];
+function buildMetadataQuery(metadataType, searchTerm, extraConditions = []) {
+  const conditions = [...extraConditions];
   if (metadataType.baseFilter) conditions.push(metadataType.baseFilter);
   let escapedTerm = escapeSoqlLikeTerm(searchTerm);
   if (metadataType.apostropheAsWildcard) {
@@ -254,6 +256,49 @@ function cancelPendingMetadataSearch() {
   }
 }
 
+// For types with objectFilterField, "Object.name" searches only that object's items.
+// Returns { nameTerm, objectLabel?, condition? }, or { unresolved: true, ... } when the object is unclear.
+async function resolveMetadataObjectScope(metadataType, searchTerm) {
+  const parsed = metadataType.objectFilterField ? parseFieldSearchTerm(searchTerm) : null;
+  if (!parsed) return { nameTerm: searchTerm };
+  const objects = await retrieveOrCreateObjectsCache();
+  const { object, suggestions } = resolveObjectForFieldSearch(objects, parsed.objectTerm);
+  // getObjectManagerSegment only returns [A-Za-z0-9_] text, so it is safe to put in the query
+  const objectSegment = object ? getObjectManagerSegment(object.href) : null;
+  if (!objectSegment) {
+    return {
+      unresolved: true,
+      objectTerm: parsed.objectTerm,
+      nameTerm: parsed.fieldTerm,
+      suggestions,
+      hasCachedObjects: Object.keys(objects).length > 0,
+    };
+  }
+  return {
+    nameTerm: parsed.fieldTerm,
+    objectLabel: object.label,
+    condition: `${metadataType.objectFilterField} = '${toEntityDefinitionId(objectSegment)}'`,
+  };
+}
+
+function renderUnresolvedObjectScope(resultsContainer, metadataType, scope) {
+  resultsContainer.innerHTML = "";
+  if (scope.suggestions.length > 0) {
+    appendFieldSearchMessage(resultsContainer, `Which object did you mean by "${scope.objectTerm}"?`);
+    appendObjectSuggestions(resultsContainer, scope.suggestions, scope.nameTerm);
+  } else if (!scope.hasCachedObjects) {
+    appendFieldSearchMessage(
+      resultsContainer,
+      `No objects cached yet. Go to Object Manager and open this panel once to filter ${metadataType.label.toLowerCase()} by object.`,
+    );
+  } else {
+    appendFieldSearchMessage(
+      resultsContainer,
+      `No object matches "${scope.objectTerm}". Type an object's label or API name, then a dot, e.g. Account.status`,
+    );
+  }
+}
+
 async function fetchAndRenderMetadata(searchTerm, resultsContainer) {
   if (!resultsContainer) return;
   // Only the newest search may render; older in-flight requests are cancelled
@@ -262,21 +307,38 @@ async function fetchAndRenderMetadata(searchTerm, resultsContainer) {
   metadataSearchAbortController = abortController;
   const metadataType = getSelectedMetadataType();
 
+  const scope = await resolveMetadataObjectScope(metadataType, searchTerm);
+  if (abortController.signal.aborted) return;
+  if (scope.unresolved) {
+    renderUnresolvedObjectScope(resultsContainer, metadataType, scope);
+    if (metadataSearchAbortController === abortController) metadataSearchAbortController = null;
+    return;
+  }
+
   resultsContainer.innerHTML = "";
   const loadingWrapper = document.createElement("div");
   loadingWrapper.classList.add("sf-loading-spinner");
   loadingWrapper.innerHTML = '<div class="sf-spinner"></div>';
   const loadingText = document.createElement("p");
-  loadingText.textContent = `Searching ${metadataType.label}...`;
+  loadingText.textContent = scope.objectLabel
+    ? `Searching ${metadataType.label} on ${scope.objectLabel}...`
+    : `Searching ${metadataType.label}...`;
   loadingWrapper.appendChild(loadingText);
   resultsContainer.appendChild(loadingWrapper);
 
   try {
-    const result = await executeSoqlQuery(buildMetadataQuery(metadataType, searchTerm), abortController.signal, {
+    const query = buildMetadataQuery(metadataType, scope.nameTerm, scope.condition ? [scope.condition] : []);
+    const result = await executeSoqlQuery(query, abortController.signal, {
       useToolingApi: metadataType.useToolingApi,
     });
     if (abortController.signal.aborted) return;
-    renderMetadataResults(resultsContainer, metadataType, result.records.map(metadataType.toResult), searchTerm);
+    renderMetadataResults(
+      resultsContainer,
+      metadataType,
+      result.records.map(metadataType.toResult),
+      scope.nameTerm,
+      scope.objectLabel,
+    );
   } catch (error) {
     if (error.name === "AbortError") return;
     console.error(`Error searching ${metadataType.label}:`, error);
@@ -292,14 +354,17 @@ async function fetchAndRenderMetadata(searchTerm, resultsContainer) {
   }
 }
 
-function renderMetadataResults(resultsContainer, metadataType, results, searchTerm) {
+// objectLabel: set when the search was scoped to one object ("Object.name")
+function renderMetadataResults(resultsContainer, metadataType, results, searchTerm, objectLabel = "") {
   resultsContainer.innerHTML = "";
+  const typeName = metadataType.label.toLowerCase();
+  const scopeText = objectLabel ? ` on ${objectLabel}` : "";
   if (results.length === 0) {
     const emptyMessage = document.createElement("p");
     emptyMessage.classList.add("sf-empty-message");
     emptyMessage.textContent = searchTerm
-      ? `No ${metadataType.label.toLowerCase()} match "${searchTerm}".`
-      : `No ${metadataType.label.toLowerCase()} found.`;
+      ? `No ${typeName}${scopeText} match "${searchTerm}".`
+      : `No ${typeName}${scopeText} found.`;
     resultsContainer.appendChild(emptyMessage);
     return;
   }
@@ -313,8 +378,8 @@ function renderMetadataResults(resultsContainer, metadataType, results, searchTe
   summary.classList.add("sf-metadata-summary");
   summary.textContent =
     results.length >= METADATA_RESULT_LIMIT
-      ? `Showing the first ${METADATA_RESULT_LIMIT} ${metadataType.label.toLowerCase()}; type to narrow the list`
-      : `${results.length} ${metadataType.label.toLowerCase()}`;
+      ? `Showing the first ${METADATA_RESULT_LIMIT} ${typeName}${scopeText}; type to narrow the list`
+      : `${results.length} ${typeName}${scopeText}`;
   resultsContainer.appendChild(summary);
 
   for (const { result } of rankedResults) {
