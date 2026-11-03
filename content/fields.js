@@ -125,12 +125,15 @@ function fuzzyMatchScore(term, text) {
   return bestScore;
 }
 
-// 4 exact, 3 prefix, 2 contains, 1-2 fuzzy, 0 no match; best of label and API name
-function scoreFieldMatch(field, fieldTerm) {
-  if (!fieldTerm) return 1;
-  const term = fieldTerm.toLowerCase();
+// 4 exact, 3 prefix, 2 contains, 1-2 fuzzy, 0 no match; best score across the given names.
+// Shared by field search and metadata search.
+function scoreNameMatch(names, searchTerm) {
+  if (!searchTerm) return 1;
+  const term = searchTerm.toLowerCase();
   let bestScore = 0;
-  for (const candidate of [field.label.toLowerCase(), field.apiName.toLowerCase()]) {
+  for (const name of names) {
+    if (!name) continue;
+    const candidate = name.toLowerCase();
     if (candidate === term) bestScore = Math.max(bestScore, 4);
     else if (candidate.startsWith(term)) bestScore = Math.max(bestScore, 3);
     else if (candidate.includes(term)) bestScore = Math.max(bestScore, 2);
@@ -205,7 +208,7 @@ async function renderFieldSearchResults(resultsContainer, objects, { objectTerm,
   loadingMessage.remove();
 
   const matchingFields = fields
-    .map((field) => ({ field, score: scoreFieldMatch(field, fieldTerm) }))
+    .map((field) => ({ field, score: scoreNameMatch([field.label, field.apiName], fieldTerm) }))
     .filter(({ score }) => score > 0)
     // Ties: shorter labels first (closer to what was typed), then alphabetical
     .sort(

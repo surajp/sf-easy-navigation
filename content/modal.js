@@ -13,6 +13,7 @@ function cleanupModal(modal) {
     searchDebounceTimer = null;
   }
   cancelPendingUserSearch();
+  cancelPendingMetadataSearch();
   clearModalFieldList();
   if (modal && modal.parentNode) {
     modal.remove();
@@ -69,20 +70,18 @@ async function displaySetupTagCloud(searchTerm = "", isLoading = false) {
     loginAsTabBtn.classList.add("sf-tab-button");
     loginAsTabBtn.dataset.tab = "loginas";
 
-    tabButtonsContainer.appendChild(setupTabBtn);
-    tabButtonsContainer.appendChild(objectsTabBtn);
-    tabButtonsContainer.appendChild(loginAsTabBtn);
+    const metadataTabBtn = document.createElement("button");
+    metadataTabBtn.textContent = "Metadata";
+    metadataTabBtn.classList.add("sf-tab-button");
+    metadataTabBtn.dataset.tab = "metadata";
 
-    setupTabBtn.addEventListener("click", () => switchTab("setup"));
-    objectsTabBtn.addEventListener("click", () => switchTab("objects"));
-    loginAsTabBtn.addEventListener("click", () => switchTab("loginas"));
-
-    setupTabBtn.addEventListener("mouseenter", () => handleTabHoverStart("setup"));
-    setupTabBtn.addEventListener("mouseleave", handleTabHoverEnd);
-    objectsTabBtn.addEventListener("mouseenter", () => handleTabHoverStart("objects"));
-    objectsTabBtn.addEventListener("mouseleave", handleTabHoverEnd);
-    loginAsTabBtn.addEventListener("mouseenter", () => handleTabHoverStart("loginas"));
-    loginAsTabBtn.addEventListener("mouseleave", handleTabHoverEnd);
+    for (const tabButton of [setupTabBtn, objectsTabBtn, loginAsTabBtn, metadataTabBtn]) {
+      const tabName = tabButton.dataset.tab;
+      tabButtonsContainer.appendChild(tabButton);
+      tabButton.addEventListener("click", () => switchTab(tabName));
+      tabButton.addEventListener("mouseenter", () => handleTabHoverStart(tabName));
+      tabButton.addEventListener("mouseleave", handleTabHoverEnd);
+    }
 
     const recordNavContainer = document.createElement("div");
     recordNavContainer.classList.add("sf-record-nav-container");
@@ -166,9 +165,17 @@ async function displaySetupTagCloud(searchTerm = "", isLoading = false) {
     loginAsResultsContainer.classList.add("sf-users-container-wrapper");
     loginAsTabContent.appendChild(loginAsResultsContainer);
 
+    const metadataTabContent = document.createElement("div");
+    metadataTabContent.classList.add("sf-tab-content");
+    metadataTabContent.dataset.tab = "metadata";
+    const metadataResultsContainer = document.createElement("div");
+    metadataResultsContainer.classList.add("sf-metadata-results");
+    metadataTabContent.appendChild(createMetadataTypeChips(metadataResultsContainer));
+    metadataTabContent.appendChild(metadataResultsContainer);
+
     const searchInput = document.createElement("input");
     searchInput.type = "text";
-    searchInput.placeholder = "Filter links, search users, or Object.field (e.g. Account.Industry)...";
+    searchInput.placeholder = "Filter links, search users or metadata, or Object.field (e.g. Account.Industry)...";
     searchInput.classList.add("sf-modal-search-input");
     searchInput.addEventListener("input", (event) => {
       if (searchDebounceTimer) {
@@ -177,7 +184,8 @@ async function displaySetupTagCloud(searchTerm = "", isLoading = false) {
       const searchValue = event.target.value.trim();
       const activeTabButton = document.querySelector(".sf-tab-button.sf-tab-active");
       const currentTab = activeTabButton ? activeTabButton.dataset.tab : "setup";
-      const debounceDelay = currentTab === "loginas" ? 300 : 0;
+      // Tabs that query Salesforce wait for a typing pause; cached tabs filter instantly
+      const debounceDelay = currentTab === "loginas" || currentTab === "metadata" ? 300 : 0;
       searchDebounceTimer = setTimeout(async () => {
         if (currentTab === "setup") {
           const currentCache = await retrieveOrCreateLinksCache();
@@ -187,6 +195,8 @@ async function displaySetupTagCloud(searchTerm = "", isLoading = false) {
           renderObjectsCloud(objectsTabContent, objectsCache, searchValue);
         } else if (currentTab === "loginas") {
           fetchAndRenderLoginAsUsers(searchValue, loginAsResultsContainer);
+        } else if (currentTab === "metadata") {
+          fetchAndRenderMetadata(searchValue, metadataResultsContainer);
         }
       }, debounceDelay);
     });
@@ -195,6 +205,7 @@ async function displaySetupTagCloud(searchTerm = "", isLoading = false) {
     modal.appendChild(setupTabContent);
     modal.appendChild(objectsTabContent);
     modal.appendChild(loginAsTabContent);
+    modal.appendChild(metadataTabContent);
 
     const loadingIndicator = document.createElement("p");
     loadingIndicator.classList.add("sf-loading-indicator");
@@ -266,6 +277,14 @@ function switchTab(tabName) {
       content.classList.remove("sf-tab-active");
     }
   });
+  if (tabName === "metadata") {
+    // Always query on entry: results are live, and the shared search box may have changed on another tab
+    const metadataResultsContainer = document.querySelector('.sf-tab-content[data-tab="metadata"] .sf-metadata-results');
+    const searchInput = document.querySelector(".sf-modal-search-input");
+    if (searchInput) searchInput.focus();
+    fetchAndRenderMetadata(searchInput ? searchInput.value.trim() : "", metadataResultsContainer);
+    return;
+  }
   if (tabName === "loginas") {
     const loginAsTabContent = document.querySelector('.sf-tab-content[data-tab="loginas"]');
     const resultsContainer = loginAsTabContent

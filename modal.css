@@ -364,6 +364,128 @@
   font-weight: 600; /* Make object names bold */
 }
 
+/* --- Metadata Tab --- */
+.sf-metadata-type-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 10px;
+}
+
+.sf-metadata-type-chip {
+  padding: 4px 10px;
+  border: 1px solid #c9c7c5;
+  border-radius: 12px;
+  background-color: white;
+  color: #3e3e3c;
+  font-size: 12px;
+  cursor: pointer;
+  transition:
+    background-color 0.2s,
+    border-color 0.2s;
+}
+
+.sf-metadata-type-chip:hover {
+  border-color: #0070d2;
+  background-color: #e8f1fd;
+}
+
+.sf-metadata-type-chip.sf-metadata-type-active {
+  border-color: #0070d2;
+  background-color: #0070d2;
+  color: white;
+}
+
+.sf-metadata-results {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  align-content: start;
+  gap: 8px;
+  padding-right: 8px;
+  flex: 1;
+  overflow-y: auto;
+}
+
+.sf-metadata-results .sf-loading-spinner,
+.sf-metadata-results .sf-error-message,
+.sf-metadata-summary {
+  grid-column: 1 / -1;
+}
+
+.sf-metadata-summary {
+  margin: 0;
+  color: #706e6b;
+  font-size: 12px;
+}
+
+.sf-metadata-item {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 8px;
+  border-radius: 4px;
+  background-color: #f8f8f8;
+  transition: background-color 0.2s;
+}
+
+.sf-metadata-item:hover {
+  background-color: #e8f1fd;
+}
+
+.sf-metadata-link {
+  color: #0070d2;
+  font-weight: 600;
+  text-decoration: none;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.sf-metadata-link:hover {
+  text-decoration: underline;
+}
+
+.sf-metadata-details {
+  color: #706e6b;
+  font-size: 11px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Inactive flows, triggers and validation rules: greyed out with a badge */
+.sf-metadata-name-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+}
+
+.sf-metadata-item.sf-metadata-inactive {
+  background-color: #f3f2f2;
+}
+
+.sf-metadata-item.sf-metadata-inactive .sf-metadata-link {
+  color: #706e6b;
+  font-weight: normal;
+}
+
+.sf-metadata-item.sf-metadata-inactive .sf-metadata-details {
+  color: #a8a6a4;
+}
+
+.sf-metadata-inactive-badge {
+  flex-shrink: 0;
+  padding: 1px 6px;
+  border-radius: 8px;
+  background-color: #dddbda;
+  color: #3e3e3c;
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+}
+
 /* --- Field Search Results ("Object.field") --- */
 .sf-field-search-summary,
 .sf-objects-container .sf-error-message {

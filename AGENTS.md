@@ -132,6 +132,16 @@ content/ (main logic), modal.css (UI/responsive), manifest.json (permissions/con
 - The field list is held in `_modalFieldList` (memory only, one object at a time) and cleared in `cleanupModal` via `clearModalFieldList()`. Never write field data to chrome.storage
 - `FieldDefinition` rejects `OR` in WHERE clauses, which is why all fields are fetched and filtered client-side
 
+## Metadata Search Feature
+
+- Fourth modal tab, **"Metadata"** (`content/metadata.js`). The user picks one type via chips; each debounced search runs exactly one live query for that type (no parallel multi-type queries, no caching)
+- Each type is one entry in `METADATA_TYPES`: sObject, whether it needs the Tooling API (`executeSoqlQuery(..., { useToolingApi: true })`), searchable name fields, optional `baseFilter`, and `toResult` (name, details, setup URL)
+- `FlowDefinitionView` and `EntityDefinition` reject `OR`, so Flows and Custom Metadata Types search their label only
+- `PermissionSet` queries fail on an escaped apostrophe, so that type swaps `\'` for the `_` wildcard (`apostropheAsWildcard`)
+- Flows link to the FlowDefinition detail page (all versions), not Flow Builder
+- In-flight searches are aborted via `metadataSearchAbortController` on a newer search or `cleanupModal`
+- Use `escapeSoqlLikeTerm` (api.js) for any user text in SOQL LIKE clauses, and `scoreNameMatch` (fields.js) for client-side ranking
+
 ## Anti-Patterns to Avoid
 
 Inline event handlers, deep nesting in extraction logic, blocking main thread, global pollution, duplicate code

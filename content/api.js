@@ -43,8 +43,18 @@ async function getSessionId() {
   });
 }
 
+// Escape backslashes first, then quotes and LIKE wildcards, so input can't break out of a SOQL string
+function escapeSoqlLikeTerm(term) {
+  return term
+    .trim()
+    .replace(/\\/g, "\\\\")
+    .replace(/'/g, "\\'")
+    .replace(/[%_]/g, "\\$&");
+}
+
 // signal (optional): AbortSignal so callers can cancel searches that a newer one replaces
-async function executeSoqlQuery(soqlQuery, signal) {
+// useToolingApi: query metadata objects (ApexClass, ValidationRule, ...) via /tooling/query
+async function executeSoqlQuery(soqlQuery, signal, { useToolingApi = false } = {}) {
   const sessionId = await getSessionId();
   if (!sessionId) {
     throw new Error(
@@ -52,8 +62,9 @@ async function executeSoqlQuery(soqlQuery, signal) {
     );
   }
   const apiOrigin = getSalesforceApiOrigin();
+  const queryPath = useToolingApi ? "tooling/query" : "query";
   const firstPage = await fetchQueryPage(
-    `${apiOrigin}/services/data/v${SALESFORCE_API_VERSION}/query?q=${encodeURIComponent(soqlQuery)}`,
+    `${apiOrigin}/services/data/v${SALESFORCE_API_VERSION}/${queryPath}?q=${encodeURIComponent(soqlQuery)}`,
     sessionId,
     signal,
   );
@@ -114,12 +125,7 @@ const USER_QUERY_FIELDS = "Id, Name, Email, Username, LastLoginDate, IsActive";
 // without one, the most recently logged-in users
 async function searchUsers(searchTerm = "", signal) {
   const fields = USER_QUERY_FIELDS;
-  // Escape backslashes first, then quotes and LIKE wildcards, so input can't break out of the string
-  const sanitizedTerm = searchTerm
-    .trim()
-    .replace(/\\/g, "\\\\")
-    .replace(/'/g, "\\'")
-    .replace(/[%_]/g, "\\$&");
+  const sanitizedTerm = escapeSoqlLikeTerm(searchTerm);
   let query = `SELECT ${fields} FROM User WHERE IsActive = true AND UserType = 'Standard'`;
   if (sanitizedTerm) {
     const likeTerm = `%${sanitizedTerm}%`;

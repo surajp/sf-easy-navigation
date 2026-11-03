@@ -14,6 +14,7 @@ I built this mainly because I found navigating to the setup tab and back quite t
 - **Object Manager Tab**: Access all Salesforce objects with quick search and navigation
 - **Object Quick Links**: Direct access to Fields, Validation Rules, Page Layouts, Record Types, Lightning Pages, Buttons & Actions, Field Sets, and Compact Layouts for each object
 - **Field Search**: Type `Object.field` (e.g. `Account.ind`, `Opp.stg`) in the Object Manager tab to find a field and open its setup page. Matches labels and API names, including fuzzy matches
+- **Metadata Tab**: Pick a metadata type (Apex classes and triggers, Flows, Lightning web and Aura components, permission sets and groups, profiles, custom labels, custom metadata types, Visualforce pages, static resources, validation rules) and search it by name; results open the item's setup page
 - **Login As User Tab**: Search and login as other users (admin feature)
 - **Record ID Navigation**: Quickly navigate to any record by entering its ID
 - **Production Warning**: In production orgs the button turns red, its tooltip says "PRODUCTION org", and the modal shows a PRODUCTION badge. Sandboxes, Developer Edition and scratch orgs keep the normal blue (detected from the hostname)
@@ -61,6 +62,8 @@ To re-extract at any time, use the **🔄 Refresh** button on the relevant tab w
    - Fields are fetched live (one query per object, about 150ms) and kept only in memory while the modal is open; nothing is stored
 3. **Login As User**: Search active users by name, email, or username to login as them. Users are queried live from Salesforce on every search and never stored in the browser; with an empty search, the tab shows users you recently logged in as, then the most recently active users
 
+4. **Metadata**: Click a type chip, then type in the search box. Each search runs one live query for the selected type (up to 50 results, ranked exact, prefix, then contains) and nothing is cached. Results open the item's setup page; Flows open the flow's detail page listing all versions
+
 ### Record ID Navigation
 
 Enter a 15 or 18-character Salesforce record ID in the input field and press Enter or click "Go to Record" to navigate directly to that record.
@@ -97,6 +100,7 @@ sf-gohome-extn/
 │   ├── users.js          # Login-as data fetching/render
 │   ├── renderers.js      # Setup/object list UI builders
 │   ├── fields.js         # Object.field search (live, in-memory only)
+│   ├── metadata.js       # Metadata tab: per-type live search
 │   ├── modal.js          # Modal assembly + navigation
 │   ├── objects.js        # Object Manager extraction
 │   ├── button.js         # Floating button orchestration

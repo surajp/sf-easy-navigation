@@ -7,6 +7,9 @@ let hoverTimer = null;
 let tabHoverTimer = null;
 let searchDebounceTimer = null;
 let userSearchAbortController = null;
+let metadataSearchAbortController = null;
+// Metadata tab: the type chip last picked (kept while the page is open)
+let selectedMetadataTypeKey = "apexClasses";
 // Field search: { objectSegment, fieldsPromise, abortController } for the open modal only, never stored
 let _modalFieldList = null;
 let isExtracting = false;
