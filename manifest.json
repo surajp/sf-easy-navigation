@@ -27,6 +27,7 @@
         "content/api.js",
         "content/users.js",
         "content/renderers.js",
+        "content/fields.js",
         "content/modal.js",
         "content/objects.js",
         "content/button.js",

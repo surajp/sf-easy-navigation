@@ -81,6 +81,12 @@ async function renderObjectsCloud(containerElement, objects, searchTerm = "") {
     objectsContainer.appendChild(extractMessage);
     return;
   }
+  // "Object.field" switches the tab to field search for that object
+  const fieldSearch = parseFieldSearchTerm(searchTerm);
+  if (fieldSearch) {
+    await renderFieldSearchResults(objectsContainer, objects, fieldSearch);
+    return;
+  }
   const sortedObjects = Object.entries(objects)
     .sort(([, valA], [, valB]) => valA.label.localeCompare(valB.label))
     .sort(([, valA], [, valB]) => {

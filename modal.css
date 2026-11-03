@@ -364,6 +364,74 @@
   font-weight: 600; /* Make object names bold */
 }
 
+/* --- Field Search Results ("Object.field") --- */
+.sf-field-search-summary,
+.sf-objects-container .sf-error-message {
+  grid-column: 1 / -1;
+}
+
+.sf-field-search-summary {
+  margin: 0;
+  color: #706e6b;
+  font-size: 12px;
+}
+
+.sf-field-object-suggestions {
+  grid-column: 1 / -1;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 8px;
+}
+
+.sf-field-object-suggestion {
+  padding: 6px 12px;
+  border: 1px solid #0070d2;
+  border-radius: 4px;
+  background-color: white;
+  color: #0070d2;
+  cursor: pointer;
+}
+
+.sf-field-object-suggestion:hover {
+  background-color: #e8f1fd;
+}
+
+.sf-field-item {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 8px;
+  border-radius: 4px;
+  background-color: #f8f8f8;
+  transition: background-color 0.2s;
+}
+
+.sf-field-item:hover {
+  background-color: #e8f1fd;
+}
+
+.sf-field-link {
+  color: #0070d2;
+  font-weight: 600;
+  text-decoration: none;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.sf-field-link:hover {
+  text-decoration: underline;
+}
+
+.sf-field-details {
+  color: #706e6b;
+  font-size: 11px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 /* Object Main Row */
 .sf-object-main-row {
   display: flex;

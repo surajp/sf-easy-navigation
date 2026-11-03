@@ -124,6 +124,14 @@ content/ (main logic), modal.css (UI/responsive), manifest.json (permissions/con
 - Implementation includes URL cleanup to handle duplicate 'view' segments in constructed URLs
 - Feature maintains existing functionality: search, pinning, and navigation patterns
 
+## Field Search Feature
+
+- Typing `Object.field` in the Object Manager tab's search switches it to field search (`content/fields.js`, hooked in `renderObjectsCloud`)
+- The object is resolved from the objects cache by label or Object Manager URL segment (API name for standard objects, 01I... ID for custom); ambiguous matches show clickable suggestions
+- Fields come from one live `FieldDefinition` query filtered by `EntityDefinitionId` (custom object IDs truncated to 15 chars). `DurableId` is `<object>.<field>`; the field part is the Object Manager URL segment
+- The field list is held in `_modalFieldList` (memory only, one object at a time) and cleared in `cleanupModal` via `clearModalFieldList()`. Never write field data to chrome.storage
+- `FieldDefinition` rejects `OR` in WHERE clauses, which is why all fields are fetched and filtered client-side
+
 ## Anti-Patterns to Avoid
 
 Inline event handlers, deep nesting in extraction logic, blocking main thread, global pollution, duplicate code

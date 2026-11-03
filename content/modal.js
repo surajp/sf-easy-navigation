@@ -13,6 +13,7 @@ function cleanupModal(modal) {
     searchDebounceTimer = null;
   }
   cancelPendingUserSearch();
+  clearModalFieldList();
   if (modal && modal.parentNode) {
     modal.remove();
   }
@@ -167,7 +168,7 @@ async function displaySetupTagCloud(searchTerm = "", isLoading = false) {
 
     const searchInput = document.createElement("input");
     searchInput.type = "text";
-    searchInput.placeholder = "Filter links or search users...";
+    searchInput.placeholder = "Filter links, search users, or Object.field (e.g. Account.Industry)...";
     searchInput.classList.add("sf-modal-search-input");
     searchInput.addEventListener("input", (event) => {
       if (searchDebounceTimer) {

@@ -7,6 +7,8 @@ let hoverTimer = null;
 let tabHoverTimer = null;
 let searchDebounceTimer = null;
 let userSearchAbortController = null;
+// Field search: { objectSegment, fieldsPromise, abortController } for the open modal only, never stored
+let _modalFieldList = null;
 let isExtracting = false;
 let _pinnedLinks = [];
 let _pinnedObjects = [];

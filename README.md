@@ -13,6 +13,7 @@ I built this mainly because I found navigating to the setup tab and back quite t
 - **Setup Links Tab**: Browse all Salesforce setup menu items organized alphabetically with search and filtering
 - **Object Manager Tab**: Access all Salesforce objects with quick search and navigation
 - **Object Quick Links**: Direct access to Fields, Validation Rules, Page Layouts, Record Types, Lightning Pages, Buttons & Actions, Field Sets, and Compact Layouts for each object
+- **Field Search**: Type `Object.field` (e.g. `Account.ind`, `Opp.stg`) in the Object Manager tab to find a field and open its setup page. Matches labels and API names, including fuzzy matches
 - **Login As User Tab**: Search and login as other users (admin feature)
 - **Record ID Navigation**: Quickly navigate to any record by entering its ID
 - **Production Warning**: In production orgs the button turns red, its tooltip says "PRODUCTION org", and the modal shows a PRODUCTION badge. Sandboxes, Developer Edition and scratch orgs keep the normal blue (detected from the hostname)
@@ -54,7 +55,10 @@ To re-extract at any time, use the **🔄 Refresh** button on the relevant tab w
 ### Navigation Modal Tabs
 
 1. **Setup Links**: Browse all Salesforce setup menu items organized alphabetically with parent categories
-2. **Object Manager**: Search and navigate to Salesforce objects with direct access to specific setup sections
+2. **Object Manager**: Search and navigate to Salesforce objects with direct access to specific setup sections. Type `Object.field` to search that object's fields instead:
+   - The object part matches an object's label or API name (`Account`, `opp`, `Order_Line_Item__c`); if several match, pick one from the suggestions
+   - The field part matches field labels and API names: exact, prefix, contains, then fuzzy (`clsdt` finds Close Date)
+   - Fields are fetched live (one query per object, about 150ms) and kept only in memory while the modal is open; nothing is stored
 3. **Login As User**: Search active users by name, email, or username to login as them. Users are queried live from Salesforce on every search and never stored in the browser; with an empty search, the tab shows users you recently logged in as, then the most recently active users
 
 ### Record ID Navigation
@@ -92,6 +96,7 @@ sf-gohome-extn/
 │   ├── api.js            # Salesforce REST helpers
 │   ├── users.js          # Login-as data fetching/render
 │   ├── renderers.js      # Setup/object list UI builders
+│   ├── fields.js         # Object.field search (live, in-memory only)
 │   ├── modal.js          # Modal assembly + navigation
 │   ├── objects.js        # Object Manager extraction
 │   ├── button.js         # Floating button orchestration
