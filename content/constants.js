@@ -6,6 +6,19 @@ function getDomain() {
   return url.hostname.split(".")[0];
 }
 
+// --- Org environment ---
+// Enhanced domains put the org type in the hostname (acme--uat.sandbox..., x.develop..., x.scratch...);
+// production hosts have none of these segments. "--" in the first label is the sandbox naming rule.
+const NON_PRODUCTION_HOST_SEGMENTS = ["sandbox", "develop", "scratch", "patch", "trailblaze", "demo", "free"];
+
+function isProductionOrg() {
+  const hostSegments = window.location.hostname.split(".");
+  if (hostSegments[0].includes("--")) return false;
+  return !hostSegments.slice(1).some((segment) => NON_PRODUCTION_HOST_SEGMENTS.includes(segment));
+}
+
+const IS_PRODUCTION_ORG = isProductionOrg();
+
 const BUTTON_ID = "sf-go-home-setup-button-ext";
 const MODAL_ID = "sf-setup-tag-cloud-modal-ext";
 const SETUP_PATH_REGEX = /\/lightning\/setup/;

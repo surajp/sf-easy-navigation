@@ -31,6 +31,13 @@ async function displaySetupTagCloud(searchTerm = "", isLoading = false) {
 
     const title = document.createElement("h2");
     title.textContent = "Salesforce Navigation";
+    if (IS_PRODUCTION_ORG) {
+      const productionBadge = document.createElement("span");
+      productionBadge.classList.add("sf-production-badge");
+      productionBadge.textContent = "PRODUCTION";
+      productionBadge.title = "You are in a production org";
+      title.appendChild(productionBadge);
+    }
     modal.appendChild(title);
 
     const tabContainer = document.createElement("div");

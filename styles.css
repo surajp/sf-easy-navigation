@@ -69,3 +69,24 @@
 .sf-go-home-setup-button.loading:hover::after {
   background-color: #005fb2;
 }
+
+/* --- Production org warning (red instead of Salesforce blue) --- */
+.sf-go-home-setup-button.sf-production-org {
+  background-color: #c23934;
+}
+
+.sf-go-home-setup-button.sf-production-org:hover {
+  background-color: #a61a14;
+}
+
+.sf-go-home-setup-button.sf-production-org:disabled {
+  background-color: #c9c7c5;
+}
+
+.sf-go-home-setup-button.sf-production-org.loading::after {
+  background-color: #c23934;
+}
+
+.sf-go-home-setup-button.sf-production-org.loading:hover::after {
+  background-color: #a61a14;
+}

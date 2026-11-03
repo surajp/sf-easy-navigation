@@ -15,6 +15,7 @@ I built this mainly because I found navigating to the setup tab and back quite t
 - **Object Quick Links**: Direct access to Fields, Validation Rules, Page Layouts, Record Types, Lightning Pages, Buttons & Actions, Field Sets, and Compact Layouts for each object
 - **Login As User Tab**: Search and login as other users (admin feature)
 - **Record ID Navigation**: Quickly navigate to any record by entering its ID
+- **Production Warning**: In production orgs the button turns red, its tooltip says "PRODUCTION org", and the modal shows a PRODUCTION badge. Sandboxes, Developer Edition and scratch orgs keep the normal blue (detected from the hostname)
 - **Pin Favorites**: Pin frequently used links and objects for quick access
 - **Persistent Cache**: Links and objects are cached locally for fast subsequent access
 - **Smart Extraction**: Automatically extracts all setup links by expanding the navigation tree

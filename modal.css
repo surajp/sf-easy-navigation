@@ -27,6 +27,19 @@
   text-align: center;
 }
 
+.sf-production-badge {
+  display: inline-block;
+  margin-left: 10px;
+  padding: 2px 8px;
+  border-radius: 4px;
+  background-color: #c23934;
+  color: white;
+  font-size: 12px;
+  font-weight: bold;
+  letter-spacing: 0.5px;
+  vertical-align: middle;
+}
+
 /* Top Row Container (Tabs + Record Nav) */
 .sf-top-row-container {
   display: flex;

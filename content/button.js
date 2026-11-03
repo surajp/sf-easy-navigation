@@ -3,6 +3,9 @@ function createButton() {
   const button = document.createElement("button");
   button.id = BUTTON_ID;
   button.classList.add("sf-go-home-setup-button");
+  if (IS_PRODUCTION_ORG) {
+    button.classList.add("sf-production-org");
+  }
   return button;
 }
 
@@ -24,13 +27,15 @@ function updateButtonState() {
   }
   if (currentButton) {
     currentButton.disabled = isExtracting;
+    let buttonTitle;
     if (isOnSetup) {
       currentButton.textContent = isExtracting ? "⚙️" : "🏠";
-      currentButton.title = isExtracting ? "Extracting..." : "Go Home";
+      buttonTitle = isExtracting ? "Extracting..." : "Go Home";
     } else {
       currentButton.textContent = "⚙️";
-      currentButton.title = "Go To Setup";
+      buttonTitle = "Go To Setup";
     }
+    currentButton.title = IS_PRODUCTION_ORG ? `${buttonTitle} (PRODUCTION org)` : buttonTitle;
   }
 }
 
