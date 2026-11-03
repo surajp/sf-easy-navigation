@@ -162,6 +162,8 @@ The extension uses descriptive console logging with context. Check the browser c
 Tested on Google Chrome (Extension Manifest V3).
 Tested on Firefox (Extension Manifest V3).
 
+**Note:** Chrome shows the warning `'background.scripts' requires manifest version of 2 or lower` when loading the extension. This is expected and harmless. `manifest.json` declares both `background.service_worker` (used by Chrome) and `background.scripts` (used by Firefox, which doesn't support MV3 service workers), and each browser ignores the key it doesn't use. Don't remove `background.scripts`, or Firefox support will break.
+
 ## License
 
 MIT License

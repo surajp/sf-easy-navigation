@@ -1,20 +1,12 @@
 /**************** background.js **************************/
 
+// Keep in sync with toMyDomainHostname in content/api.js
 function getSalesforceDomainFromUrl(tabUrl) {
-  let salesforceDomain = tabUrl.hostname;
-
-  // Convert Lightning domain to Classic/API domain
-  if (salesforceDomain.includes(".lightning.force.com")) {
-    const instanceName = salesforceDomain.split(".")[0];
-
-    // Determine if it's a sandbox by checking for "--" in the instance name
-    if (instanceName.includes("--")) {
-      salesforceDomain = `${instanceName}.sandbox.my.salesforce.com`;
-    } else {
-      salesforceDomain = `${instanceName}.my.salesforce.com`;
-    }
-  }
-  return salesforceDomain;
+  // Swap only the suffix so org-type segments survive
+  // (e.g. acme--uat.sandbox, acme-dev-ed.develop, x.scratch)
+  return tabUrl.hostname
+    .replace(/\.lightning\.force\.com$/, ".my.salesforce.com")
+    .replace(/\.my\.salesforce-setup\.com$/, ".my.salesforce.com");
 }
 
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {

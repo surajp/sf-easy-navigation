@@ -1,20 +1,16 @@
 /********* content/api.js **************/
+// --- My Domain resolution ---
+// Swap only the suffix so org-type segments survive
+// (e.g. acme--uat.sandbox, acme-dev-ed.develop, x.scratch).
+// Keep in sync with getSalesforceDomainFromUrl in background.js
+function toMyDomainHostname(hostname) {
+  return hostname
+    .replace(/\.lightning\.force\.com$/, ".my.salesforce.com")
+    .replace(/\.my\.salesforce-setup\.com$/, ".my.salesforce.com");
+}
+
 function getSalesforceApiOrigin() {
-  const origin = window.location.origin;
-  try {
-    const url = new URL(origin);
-    const hostname = url.hostname;
-    if (hostname.includes(".lightning.force.com")) {
-      const instanceName = hostname.split(".")[0];
-      const salesforceDomain = instanceName.includes("--")
-        ? `${instanceName}.sandbox.my.salesforce.com`
-        : `${instanceName}.my.salesforce.com`;
-      return `https://${salesforceDomain}`;
-    }
-  } catch (error) {
-    console.warn("getSalesforceApiOrigin: failed to parse origin", error);
-  }
-  return origin;
+  return `https://${toMyDomainHostname(window.location.hostname)}`;
 }
 
 async function getSessionId() {
@@ -54,8 +50,24 @@ async function executeSoqlQuery(soqlQuery) {
       "No session found. Please ensure you're logged into Salesforce.",
     );
   }
-  const apiUrl = `${getSalesforceApiOrigin()}/services/data/v${SALESFORCE_API_VERSION}/query?q=${encodeURIComponent(soqlQuery)}`;
-  const response = await fetch(apiUrl, {
+  const apiOrigin = getSalesforceApiOrigin();
+  const firstPage = await fetchQueryPage(
+    `${apiOrigin}/services/data/v${SALESFORCE_API_VERSION}/query?q=${encodeURIComponent(soqlQuery)}`,
+    sessionId,
+  );
+  // REST returns at most ~2000 rows per page; follow nextRecordsUrl so LIMITs above that are honored
+  const records = [...(firstPage.records || [])];
+  let nextRecordsUrl = firstPage.nextRecordsUrl;
+  while (nextRecordsUrl) {
+    const page = await fetchQueryPage(`${apiOrigin}${nextRecordsUrl}`, sessionId);
+    records.push(...(page.records || []));
+    nextRecordsUrl = page.nextRecordsUrl;
+  }
+  return { ...firstPage, records, done: true, nextRecordsUrl: undefined };
+}
+
+async function fetchQueryPage(url, sessionId) {
+  const response = await fetch(url, {
     method: "GET",
     headers: {
       Authorization: `Bearer ${sessionId}`,
@@ -96,11 +108,10 @@ async function getOrgId() {
 async function searchUsers(searchTerm = "") {
   const fields = "Id, Name, Email, Username, LastLoginDate, IsActive";
   const sanitizedTerm = searchTerm.trim().replace(/'/g, "\\'");
-  let query = `SELECT ${fields} FROM User WHERE IsActive = true`;
+  let query = `SELECT ${fields} FROM User WHERE IsActive = true AND UserType = 'Standard'`;
   if (sanitizedTerm) {
     const likeTerm = `%${sanitizedTerm}%`;
     query += ` AND (Name LIKE '${likeTerm}' OR Email LIKE '${likeTerm}' OR Username LIKE '${likeTerm}')`;
-    query += " AND Type='Standard'";
     query += " ORDER BY Name ASC LIMIT 50";
   } else {
     query += " ORDER BY LastLoginDate DESC NULLS LAST LIMIT 5000";
