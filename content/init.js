@@ -3,3 +3,4 @@
 // and re-attaching the button if Salesforce removes it from the page
 updateButtonState();
 setInterval(updateButtonState, 1000);
+removeLegacyUsersCache();

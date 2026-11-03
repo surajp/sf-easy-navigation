@@ -22,7 +22,7 @@ Modular layout: `manifest.json` (Chrome Extension V3 config), `background.js` (s
 
 ## Naming Conventions
 
-Constants: `UPPER_SNAKE_CASE` (BUTTON*ID, MODAL_ID, SETUP_PATH_REGEX, BUTTON_HOVER_DELAY_MS, TAB_HOVER_DELAY_MS, SALESFORCE_API_VERSION, CACHE_EXPIRY_DAYS, USER_CACHE_EXPIRY_DAYS)
+Constants: `UPPER_SNAKE_CASE` (BUTTON*ID, MODAL_ID, SETUP_PATH_REGEX, BUTTON_HOVER_DELAY_MS, TAB_HOVER_DELAY_MS, SALESFORCE_API_VERSION, CACHE_EXPIRY_DAYS, USER_SEARCH_LIMIT, MAX_RECENT_USERS)
 Functions: `camelCase` (createButton, handleButtonClick, updateButtonState, handleButtonHoverStart, handleTabHoverStart, cleanupModal)
 Variables: `camelCase` (currentButton, hoverTimer, tabHoverTimer, searchDebounceTimer), prefix private vars with `*`(_pinnedLinks, _pinnedObjects, _recentUsers)
 CSS classes:`sf-\*` prefix with kebab-case (.sf-go-home-setup-button, .sf-setup-tag-cloud-modal)
@@ -67,7 +67,7 @@ Scrolling: Detect completion by comparing scroll positions, use delays for DOM u
 
 Content Scripts (`content/*.js`): DOM interaction, link extraction/caching, modal UI, object quick links, and all user-facing logic (including Login As User tab)
 Background Script (background.js): Cookie/session retrieval for REST calls (Login As feature); setup link extraction runs entirely in the content script
-Storage Keys: sf-setup-links-{domain}-links, -objects, -pinned-links, -pinned-objects, -updated, -objects-updated, -users, -users-updated, -recent-users
+Storage Keys: sf-setup-links-{domain}-links, -objects, -pinned-links, -pinned-objects, -updated, -objects-updated, -recent-users
 
 ## Hover Configuration
 
@@ -91,14 +91,14 @@ When adding or modifying event listeners and timers:
 
 ## Login As User Feature
 
-- Modal now has a third tab titled **"Login As User"** that lets admins search active standard users (all users are fetched once via paginated SOQL and cached; the debounced search filters the cache client-side; recent logins first, then by name)
+- Modal now has a third tab titled **"Login As User"** that lets admins search active standard users (queried live on every debounced search, never stored; an in-flight search is aborted when a newer one starts or the modal closes; an empty search shows recent logins then the most recently active users)
 - Content script retrieves Salesforce data via REST (`/services/data/vXX/query`) using the browser session ID
 - Session ID is obtained by messaging `background.js`, which calls `chrome.cookies.get({ url: https://<my.salesforce.com domain>, name: "sid" })`
 - Background derives the correct My Domain via `getSalesforceDomainFromUrl` (handles `lightning.force.com` → `my.salesforce.com` and setup domains)
 - Each user row includes a profile icon button (👤) that navigates directly to the user's detail page in Setup
 - `manifest.json` must include the `cookies` permission for this flow; keep it in sync if permissions change
 - Any future REST calls should reuse the cached session ID helper to avoid redundant cookie lookups and handle error messaging consistently
-- Track recently impersonated users per domain in chrome.storage.local using the `sf-setup-links-{domain}-recent-users` key, keeping the most recent logins first with no duplicates. Never clear this cache when busting other storage keys, and always handle missing or malformed cache data gracefully.
+- Track recently impersonated users per domain in chrome.storage.local using the `sf-setup-links-{domain}-recent-users` key, keeping the most recent logins first with no duplicates, capped at `MAX_RECENT_USERS`. Store only user IDs, never names or emails; don't add a users cache (security and memory). Never clear this cache when busting other storage keys, and always handle missing or malformed cache data gracefully.
 
 ## Copilot Guidelines (from .github/copilot-instructions.md)
 

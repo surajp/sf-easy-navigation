@@ -6,6 +6,7 @@ let buttonEventListenersAttached = false;
 let hoverTimer = null;
 let tabHoverTimer = null;
 let searchDebounceTimer = null;
+let userSearchAbortController = null;
 let isExtracting = false;
 let _pinnedLinks = [];
 let _pinnedObjects = [];

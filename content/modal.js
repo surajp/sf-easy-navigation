@@ -12,6 +12,7 @@ function cleanupModal(modal) {
     clearTimeout(searchDebounceTimer);
     searchDebounceTimer = null;
   }
+  cancelPendingUserSearch();
   if (modal && modal.parentNode) {
     modal.remove();
   }
@@ -160,24 +161,6 @@ async function displaySetupTagCloud(searchTerm = "", isLoading = false) {
     loginAsTabContent.classList.add("sf-tab-content");
     loginAsTabContent.dataset.tab = "loginas";
 
-    const loginAsRefreshContainer = document.createElement("div");
-    loginAsRefreshContainer.classList.add("sf-tab-refresh-container");
-    const loginAsRefreshBtn = document.createElement("button");
-    loginAsRefreshBtn.textContent = "🔄 Refresh Users";
-    loginAsRefreshBtn.classList.add("sf-tab-refresh-button");
-    loginAsRefreshBtn.addEventListener("click", async () => {
-      const resultsContainer = loginAsTabContent.querySelector(".sf-users-container-wrapper");
-      const searchInputRef = modal.querySelector(".sf-modal-search-input");
-      await fetchAndRenderLoginAsUsers(
-        searchInputRef ? searchInputRef.value.trim() : "",
-        resultsContainer,
-        loginAsTabContent,
-        true,
-      );
-    });
-    loginAsRefreshContainer.appendChild(loginAsRefreshBtn);
-    loginAsTabContent.appendChild(loginAsRefreshContainer);
-
     const loginAsResultsContainer = document.createElement("div");
     loginAsResultsContainer.classList.add("sf-users-container-wrapper");
     loginAsTabContent.appendChild(loginAsResultsContainer);
@@ -202,7 +185,7 @@ async function displaySetupTagCloud(searchTerm = "", isLoading = false) {
           const objectsCache = await retrieveOrCreateObjectsCache();
           renderObjectsCloud(objectsTabContent, objectsCache, searchValue);
         } else if (currentTab === "loginas") {
-          fetchAndRenderLoginAsUsers(searchValue, loginAsResultsContainer, loginAsTabContent);
+          fetchAndRenderLoginAsUsers(searchValue, loginAsResultsContainer);
         }
       }, debounceDelay);
     });
@@ -289,12 +272,9 @@ function switchTab(tabName) {
       : null;
     const searchInput = document.querySelector(".sf-modal-search-input");
     if (searchInput) searchInput.focus();
-    if (loginAsTabContent && resultsContainer && loginAsTabContent.dataset.loaded !== "true") {
-      fetchAndRenderLoginAsUsers(
-        searchInput ? searchInput.value.trim() : "",
-        resultsContainer,
-        loginAsTabContent,
-      );
+    // Always query on entry: results are live, and the shared search box may have changed on another tab
+    if (resultsContainer) {
+      fetchAndRenderLoginAsUsers(searchInput ? searchInput.value.trim() : "", resultsContainer);
     }
     return;
   }

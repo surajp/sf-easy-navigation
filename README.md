@@ -55,7 +55,7 @@ To re-extract at any time, use the **🔄 Refresh** button on the relevant tab w
 
 1. **Setup Links**: Browse all Salesforce setup menu items organized alphabetically with parent categories
 2. **Object Manager**: Search and navigate to Salesforce objects with direct access to specific setup sections
-3. **Login As User**: Search active users by name, email, or username to login as them
+3. **Login As User**: Search active users by name, email, or username to login as them. Users are queried live from Salesforce on every search and never stored in the browser; with an empty search, the tab shows users you recently logged in as, then the most recently active users
 
 ### Record ID Navigation
 
@@ -120,9 +120,7 @@ sf-gohome-extn/
 - `sf-setup-links-{domain}-pinned-objects`: Pinned objects
 - `sf-setup-links-{domain}-updated`: Last cache update timestamp (setup links)
 - `sf-setup-links-{domain}-objects-updated`: Last cache update timestamp (objects)
-- `sf-setup-links-{domain}-users-updated`: Last cache update timestamp (users)
-- `sf-setup-links-{domain}-users`: Cached user data for Login As feature
-- `sf-setup-links-{domain}-recent-users`: Recently impersonated users (not cleared with cache bust)
+- `sf-setup-links-{domain}-recent-users`: IDs of up to 10 recently impersonated users (not cleared with cache bust)
 
 ## Development
 
@@ -152,7 +150,7 @@ The extension uses descriptive console logging with context. Check the browser c
 
 - Setup links cache expires after 60 days
 - Objects cache expires after 60 days
-- Users cache expires after 30 days
+- Users are not cached; Login As searches query Salesforce live (data stored by older versions is deleted on load)
 - Use the **🔄 Refresh** button on each tab to force a refresh (setup links and objects must be refreshed from Setup and Object Manager respectively)
 
 ## Browser Support

@@ -27,7 +27,8 @@ const SETUP_HOME_PATH = "/lightning/setup/SetupOneHome/home";
 const KEY_BASE = `sf-setup-links-${getDomain()}`;
 const SALESFORCE_API_VERSION = "65.0";
 const CACHE_EXPIRY_DAYS = 60;
-const USER_CACHE_EXPIRY_DAYS = 30;
+const USER_SEARCH_LIMIT = 50;
+const MAX_RECENT_USERS = 10;
 
 // --- Hover Configuration ---
 const BUTTON_HOVER_DELAY_MS = 1000;

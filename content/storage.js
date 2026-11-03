@@ -47,68 +47,20 @@ async function updateRecentUsers(userId) {
     recentUsers.splice(index, 1);
   }
   recentUsers.unshift(userId);
-  _recentUsers = recentUsers;
+  _recentUsers = recentUsers.slice(0, MAX_RECENT_USERS);
   await chrome.storage.local.set({
     [key]: JSON.stringify(_recentUsers),
   });
 }
 
-async function retrieveOrCreateUsersCache() {
-  const key = KEY_BASE + "-users";
-  let usersCache = (await chrome.storage.local.get([key]))[key];
+// --- Legacy users cache cleanup ---
+// Earlier versions stored up to 5000 users (names, usernames, emails) in chrome.storage.
+// Users are now queried live, so delete that data. Recent-user IDs are kept on purpose.
+async function removeLegacyUsersCache() {
   try {
-    usersCache = usersCache ? JSON.parse(usersCache) : { records: [] };
-  } catch (e) {
-    console.error("Error parsing users cache from localStorage", e);
-    usersCache = { records: [] };
-  }
-  return usersCache;
-}
-
-async function saveUsersCache(usersCache, allDone = false) {
-  const usersKey = KEY_BASE + "-users";
-  const tsKey = KEY_BASE + "-users-updated";
-  await chrome.storage.local.set({
-    [usersKey]: JSON.stringify(usersCache),
-  });
-  if (allDone) {
-    await chrome.storage.local.set({
-      [tsKey]: Date.now().toString(),
-    });
-  }
-}
-
-async function shouldRefreshUsersCache() {
-  const key = KEY_BASE + "-users-updated";
-  const usersCache = await retrieveOrCreateUsersCache();
-  if (!usersCache.records || usersCache.records.length === 0) {
-    return true;
-  }
-  const lastUpdated = (await chrome.storage.local.get([key]))[key];
-  if (!lastUpdated) return true;
-  const now = Date.now();
-  const maxAge = USER_CACHE_EXPIRY_DAYS * 24 * 60 * 60 * 1000;
-  return now - parseInt(lastUpdated) > maxAge;
-}
-
-async function refreshUsersCache() {
-  try {
-    const users = await searchUsers("");
-    const usersCache = {
-      records: users.records.map((user) => ({
-        Id: user.Id,
-        Name: user.Name,
-        Email: user.Email,
-        Username: user.Username,
-        LastLoginDate: user.LastLoginDate,
-        IsActive: user.IsActive,
-      })),
-    };
-    await saveUsersCache(usersCache, true);
-    return usersCache;
+    await chrome.storage.local.remove([KEY_BASE + "-users", KEY_BASE + "-users-updated"]);
   } catch (error) {
-    console.error("Error refreshing users cache:", error);
-    throw error;
+    console.error("Error removing legacy users cache from storage", error);
   }
 }
 

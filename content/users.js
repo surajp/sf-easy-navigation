@@ -19,32 +19,55 @@ function showLoginAsError(containerElement, message) {
   errorElement.textContent = message;
 }
 
-async function fetchAndRenderLoginAsUsers(searchTerm, containerElement, tabContent, forceRefresh = false) {
+function cancelPendingUserSearch() {
+  if (userSearchAbortController) {
+    userSearchAbortController.abort();
+    userSearchAbortController = null;
+  }
+}
+
+// Without a search term: users you've logged in as recently, then the most recently active users
+async function fetchDefaultLoginAsUsers(signal) {
+  const recentUserIds = (await retrieveOrCreateRecentUsersCache()).slice(0, MAX_RECENT_USERS);
+  const [recentUsers, recentlyActiveUsers] = await Promise.all([
+    getUsersByIds(recentUserIds, signal),
+    searchUsers("", signal),
+  ]);
+  const seenIds = new Set();
+  const records = [...recentUsers.records, ...recentlyActiveUsers.records].filter((user) => {
+    if (seenIds.has(user.Id)) return false;
+    seenIds.add(user.Id);
+    return true;
+  });
+  return { records };
+}
+
+// Users are queried live on every search and never stored
+async function fetchAndRenderLoginAsUsers(searchTerm, containerElement) {
   if (!containerElement) return;
+  // Only the newest search may render; older in-flight requests are cancelled
+  cancelPendingUserSearch();
+  const abortController = new AbortController();
+  userSearchAbortController = abortController;
   showLoadingIndicator(containerElement);
   try {
-    const shouldRefresh = forceRefresh || (await shouldRefreshUsersCache());
-    const users = shouldRefresh ? await refreshUsersCache() : await retrieveOrCreateUsersCache();
-    if (searchTerm) {
-      const sanitizedTerm = searchTerm.trim().toLowerCase();
-      users.records = users.records.filter(
-        (user) =>
-          user.Name.toLowerCase().includes(sanitizedTerm) ||
-          user.Username.toLowerCase().includes(sanitizedTerm) ||
-          (user.Email && user.Email.toLowerCase().includes(sanitizedTerm)),
-      );
-    }
+    const users = searchTerm
+      ? await searchUsers(searchTerm, abortController.signal)
+      : await fetchDefaultLoginAsUsers(abortController.signal);
+    if (abortController.signal.aborted) return;
     // renderUserResults handles ordering (recent logins first, then by name)
     await renderUserResults(containerElement, users, searchTerm);
-    if (!searchTerm && tabContent) {
-      tabContent.dataset.loaded = "true";
-    }
   } catch (error) {
+    if (error.name === "AbortError") return;
     containerElement.innerHTML = "";
     const errorDiv = document.createElement("p");
     errorDiv.classList.add("sf-error-message");
     errorDiv.textContent = error.message;
     containerElement.appendChild(errorDiv);
+  } finally {
+    if (userSearchAbortController === abortController) {
+      userSearchAbortController = null;
+    }
   }
 }
 

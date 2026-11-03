@@ -43,7 +43,8 @@ async function getSessionId() {
   });
 }
 
-async function executeSoqlQuery(soqlQuery) {
+// signal (optional): AbortSignal so callers can cancel searches that a newer one replaces
+async function executeSoqlQuery(soqlQuery, signal) {
   const sessionId = await getSessionId();
   if (!sessionId) {
     throw new Error(
@@ -54,21 +55,23 @@ async function executeSoqlQuery(soqlQuery) {
   const firstPage = await fetchQueryPage(
     `${apiOrigin}/services/data/v${SALESFORCE_API_VERSION}/query?q=${encodeURIComponent(soqlQuery)}`,
     sessionId,
+    signal,
   );
   // REST returns at most ~2000 rows per page; follow nextRecordsUrl so LIMITs above that are honored
   const records = [...(firstPage.records || [])];
   let nextRecordsUrl = firstPage.nextRecordsUrl;
   while (nextRecordsUrl) {
-    const page = await fetchQueryPage(`${apiOrigin}${nextRecordsUrl}`, sessionId);
+    const page = await fetchQueryPage(`${apiOrigin}${nextRecordsUrl}`, sessionId, signal);
     records.push(...(page.records || []));
     nextRecordsUrl = page.nextRecordsUrl;
   }
   return { ...firstPage, records, done: true, nextRecordsUrl: undefined };
 }
 
-async function fetchQueryPage(url, sessionId) {
+async function fetchQueryPage(url, sessionId, signal) {
   const response = await fetch(url, {
     method: "GET",
+    signal,
     headers: {
       Authorization: `Bearer ${sessionId}`,
       "Content-Type": "application/json",
@@ -105,8 +108,12 @@ async function getOrgId() {
   }
 }
 
-async function searchUsers(searchTerm = "") {
-  const fields = "Id, Name, Email, Username, LastLoginDate, IsActive";
+const USER_QUERY_FIELDS = "Id, Name, Email, Username, LastLoginDate, IsActive";
+
+// Users are always queried live (never stored): with a term, matches by name;
+// without one, the most recently logged-in users
+async function searchUsers(searchTerm = "", signal) {
+  const fields = USER_QUERY_FIELDS;
   // Escape backslashes first, then quotes and LIKE wildcards, so input can't break out of the string
   const sanitizedTerm = searchTerm
     .trim()
@@ -117,16 +124,27 @@ async function searchUsers(searchTerm = "") {
   if (sanitizedTerm) {
     const likeTerm = `%${sanitizedTerm}%`;
     query += ` AND (Name LIKE '${likeTerm}' OR Email LIKE '${likeTerm}' OR Username LIKE '${likeTerm}')`;
-    query += " ORDER BY Name ASC LIMIT 50";
+    query += ` ORDER BY Name ASC LIMIT ${USER_SEARCH_LIMIT}`;
   } else {
-    query += " ORDER BY LastLoginDate DESC NULLS LAST LIMIT 5000";
+    query += ` ORDER BY LastLoginDate DESC NULLS LAST LIMIT ${USER_SEARCH_LIMIT}`;
   }
   try {
-    return await executeSoqlQuery(query);
+    return await executeSoqlQuery(query, signal);
   } catch (error) {
-    console.error("Error searching users:", error);
+    if (error.name !== "AbortError") console.error("Error searching users:", error);
     throw error;
   }
+}
+
+async function getUsersByIds(userIds, signal) {
+  // IDs come from storage; only allow well-formed Salesforce IDs into the query
+  const validIds = (userIds || []).filter((id) => /^[a-zA-Z0-9]{15}([a-zA-Z0-9]{3})?$/.test(id));
+  if (validIds.length === 0) {
+    return { records: [] };
+  }
+  const idsClause = validIds.map((id) => `'${id}'`).join(",");
+  const query = `SELECT ${USER_QUERY_FIELDS} FROM User WHERE Id IN (${idsClause}) AND IsActive = true AND UserType = 'Standard'`;
+  return executeSoqlQuery(query, signal);
 }
 
 async function getLoginAsUrl(targetUserId) {
